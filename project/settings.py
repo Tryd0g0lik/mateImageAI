@@ -298,7 +298,11 @@ SIMPLE_JWT = {
 
 
 #"""REDIS"""
-"""REDIS"""
+"""REDIS & CELERY IN DJANGO"""
+# https://redis.io/
+# https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
+# 4. Configure Celery to use ....
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
