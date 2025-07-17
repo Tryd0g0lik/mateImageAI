@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from datetime import timedelta, datetime
 from dotenv_ import (DB_ENGINE, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_USER,
-                     SECRET_KEY_DJ)
+                     SECRET_KEY_DJ, EMAIL_HOST_USER_, EMAIL_HOST_PASSWORD_)
 import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,11 +61,13 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    # "project.csrf.CustomCsrfMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -329,12 +331,42 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": lambda request: True,
 }
 
-# # REDIS
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("redis", 6379)],
-#         },
-#     },
-# }
+# EMAIL_BACKEND in down for a product
+# https://docs.djangoproject.com/en/4.2/topics/email/#smtp-backend
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND in down for a development
+
+# https://docs.djangoproject.com/en/4.2/topics/email/#console-backend
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-from-email
+# DEFAULT_FROM_EMAIL = f"smtp.{EMAIL_HOST_USER_}"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_HOST
+# EMAIL_HOST = 'smtp.example.com' # Замените на адрес вашего SMTP-сервера
+# EMAIL_HOST = 'mail.privateemail.com'
+EMAIL_HOST = "smtp.yandex.ru"
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_PORT
+EMAIL_PORT = 465  # 465
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-user
+EMAIL_HOST_USER = f"{EMAIL_HOST_USER_}"
+# EMAIL_HOST_USER = 'noreply@custom-tools.online'
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-password
+EMAIL_HOST_PASSWORD = f"{EMAIL_HOST_PASSWORD_}"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-ssl
+EMAIL_USE_SSL = True  # если порт 465
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-tls
+# EMAIL_USE_TLS = False
+# EMAIL_USE_TLS = True  # если порт 587
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-timeout
+EMAIL_TIMEOUT = 60
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_USE_LOCALTIME
+EMAIL_USE_LOCALTIME = True
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
+# EMAIL_SUBJECT_PREFIX = "activation_from_cloud"
+

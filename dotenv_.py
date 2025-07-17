@@ -13,8 +13,13 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT", "")
 ALCHEMY_DATABASE_URL = "postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 DB_ENGINE = os.getenv("DB_ENGINE", "")
 
+APP_PROTOCOL = os.getenv("APP_PROTOCOL", "")
+APP_HOST = os.getenv("APP_HOST", "")
+APP_PORT = os.getenv("APP_PORT", "")
 # База данных
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # Email сервис (опционально)
-# EMAIL_SERVICE_API_KEY=
+EMAIL_PORT_ = os.getenv("EMAIL_PORT", "587")  # 1025
+EMAIL_HOST_USER_ = os.getenv("EMAIL_HOST_USER_", "")
+EMAIL_HOST_PASSWORD_ = os.getenv("EMAIL_HOST_PASSWORD", "")
