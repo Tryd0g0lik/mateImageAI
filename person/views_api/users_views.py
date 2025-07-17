@@ -18,29 +18,30 @@ def serializer_validate(serializer):
         raise serializers.ValidationError(serializer.errors)
 
 class UserViews(ViewSet):
-    serializer_class = UsersSerializer
+
+
     def create(self, request) -> type(Response):
         user = request.user
         data = request.data
         response = Response(status=status.HTTP_401_UNAUTHORIZED)
         # CHECK IF USER EXISTS
-        user_name_list = Users.objects.filter(name=data.get("name"))
+        user_name_list = Users.objects.filter(username=data.get("username"))
         user_email_list = Users.objects.filter(email=data.get("email"))
         if not user.is_authenticated and (not user_name_list.exists() or not user_email_list.exists()):
             try:
-                password_hash = self.get_hash_password(request.userget("password"))
-                serializer = self.serializer_class(data=data)
+                password = self.get_hash_password(request.data.get("password"))
+                serializer = UsersSerializer(data=data)
                 serializer_validate(serializer)
-                serializer.validated_data["password"] = password_hash
+                serializer.validated_data["password"] = password
                 serializer.save()
                 # RESPONSE WILL BE TO SEND. CODE 200
                 response.data = {"data": "OK"}
                 response.status = status.HTTP_201_CREATED
                 # SEND MESSAGE TO THE USER's EMAIL
                 user = Users()
-                user.name = serializer.data["name"]
+                user.password = serializer.data["name"]
                 user.email = serializer.data["email"]
-                user.password_hash = serializer.data["password"]
+                user.password = serializer.data["password"]
                 signal_user_registered.send(data, instance=serializer)
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 401
