@@ -11,9 +11,9 @@ timezone = 'Asia/Krasnoyarsk'
 enable_utc = True
 
 # celery speed for handle of tasks
-task_annotations = {
-    'one_tasks.celery_task_money': {'rate_limit': '10/m'}
-}
+# task_annotations = {
+#     'one_tasks.celery_task_money': {'rate_limit': '10/m'}
+# }
 
 # THe True when need the sync
 task_always_eager = False
@@ -28,11 +28,12 @@ worker_concurrency = 4
  так как Celery не будет пытаться создать очереди, если они \
  не существуют. \
 '''
-task_exchange = (
-    Exchange('generations', type='direct', passive=True,
-             routing_key='hard')
-)
-task_queues = (
-    Queue('generations', Exchange('money', type='direct', passive=True),
-          routing_key='hard'),
-)
+# task_exchange = (
+#     Exchange('generations', type='direct', passive=True,
+#              routing_key='hard')
+# )
+# task_queues = (
+#     Queue('generations', Exchange('generations', type='direct', passive=True),
+#           routing_key='hard'),
+# )
+task_acks_late=True
