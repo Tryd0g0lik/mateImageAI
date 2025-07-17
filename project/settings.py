@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'person',
+    # 'metaimage',
 ]
 
 MIDDLEWARE = [
@@ -301,6 +302,7 @@ SIMPLE_JWT = {
 """REDIS & CELERY IN DJANGO"""
 # https://redis.io/
 # https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
+# https://docs.djangoproject.com/en/5.2/topics/cache/
 # 4. Configure Celery to use ....
 
 CACHES = {
