@@ -42,7 +42,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",
+    # "daphne",
     'rest_framework',
     'drf_spectacular',
     # 'bootstrap4',

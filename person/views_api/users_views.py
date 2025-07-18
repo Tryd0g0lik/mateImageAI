@@ -6,10 +6,14 @@ from person.apps import signal_user_registered
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from adrf.viewsets import ViewSet
-
+# from adrf.viewsets import ViewSet
+from rest_framework.viewsets import ViewSet
 from person.serializers import UsersSerializer
 from drf_yasg.utils import swagger_auto_schema
+from person.serializers import (  # Импортируем нужные сериализаторы
+    UserResponseSerializer,
+    ErrorResponseSerializer,
+)
 
 
 def serializer_validate(serializer):
@@ -22,16 +26,12 @@ class UserViews(ViewSet):
 
     @method_decorator(
         swagger_auto_schema(
-            operation_description="Создание нового пользователя",
-            request_body=UsersSerializer,
+            method="post",
             responses={
-                201: UsersSerializer,
-                401: {
-                    "description": "Неавторизованный запрос или пользователь уже существует"
-                },
-                500: {"description": "Внутренняя ошибка сервера"},
+                200: UserResponseSerializer,
+                401: ErrorResponseSerializer,
+                500: ErrorResponseSerializer,
             },
-            tags=["Users"],
         )
     )
     def create(self, request) -> type(Response):
