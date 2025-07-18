@@ -44,8 +44,10 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     "daphne",
     'rest_framework',
+    'drf_spectacular',
     # 'bootstrap4',
     'corsheaders',
+    'drf_yasg',
     'adrf',
     "webpack_loader",
     'django.contrib.admin',
@@ -293,8 +295,8 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',  # Для работы с сессиями
         'rest_framework.authentication.TokenAuthentication',   # Опционально для API
-
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
     # "access_token_lifetime": TIMEDELTA(MILLISECONDS=TIMEDELTA(MINUTES=5).TOTAL_SECONDS()*1000),
     # "refresh_token_lifetime": TIMEDELTA(DAYS = TIMEDELTA(DAYS=1).TOTAL_SECONDS()*1000),
@@ -375,3 +377,20 @@ EMAIL_USE_LOCALTIME = True
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
 # EMAIL_SUBJECT_PREFIX
+
+# SWAGGER
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+    'JSON_EDITOR': True,
+}
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your API',
+    'VERSION': '1.0.0',
+}

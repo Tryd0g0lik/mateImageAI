@@ -44,6 +44,9 @@ pytest-django = "^4.11.1"
 pytest-mock = "^3.14.0"
 pytest-playwright = "^0.7.0"
 playwright = "^1.52.0"
+drf-yasg = "^1.21.10"
+django-rest-framework-async = "^0.1.0"
+drf-spectacular = "^0.28.0"
 
 
 

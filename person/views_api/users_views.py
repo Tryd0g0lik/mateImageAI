@@ -1,4 +1,5 @@
 from dotenv_ import SECRET_KEY_DJ
+from django.utils.decorators import method_decorator
 from person.hasher import PasswordHasher
 from person.models import Users
 from person.apps import signal_user_registered
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 from adrf.viewsets import ViewSet
 
 from person.serializers import UsersSerializer
+from drf_yasg.utils import swagger_auto_schema
 
 
 def serializer_validate(serializer):
@@ -18,6 +20,20 @@ def serializer_validate(serializer):
 
 class UserViews(ViewSet):
 
+    @method_decorator(
+        swagger_auto_schema(
+            operation_description="Создание нового пользователя",
+            request_body=UsersSerializer,
+            responses={
+                201: UsersSerializer,
+                401: {
+                    "description": "Неавторизованный запрос или пользователь уже существует"
+                },
+                500: {"description": "Внутренняя ошибка сервера"},
+            },
+            tags=["Users"],
+        )
+    )
     def create(self, request) -> type(Response):
         user = request.user
         data = request.data
