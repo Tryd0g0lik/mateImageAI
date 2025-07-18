@@ -13,7 +13,8 @@ import os
 from pathlib import Path
 from datetime import timedelta, datetime
 from dotenv_ import (DB_ENGINE, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_USER,
-                     SECRET_KEY_DJ, EMAIL_HOST_USER_, EMAIL_HOST_PASSWORD_)
+                     SECRET_KEY_DJ, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD,
+                     EMAIL_HOST)
 import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -169,6 +170,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DEFAULT_CHARSET = "utf-8"
 AUTH_USER_MODEL = "person.Users"
 
+# '''Cookie'''
+SESSION_COOKIE_HTTPONLY = False  # CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # изменить на True CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"  # CSRF_COOKIE_SAMESITE = 'Lax'  # или 'Strict'
+SESSION_COOKIE_AGE = 86400
+
 
 # '''CORS'''
 # False - это значение по умолчанию и означает, что сервер не будет
@@ -223,9 +230,9 @@ WEBPACK_LOADER = {
     "DEFAULT": {
         "CACHE": not DEBUG,
         # 'BUNDLE_DIR_NAME': '..\\frontend\\src\\bundles',
-        "BUNDLE_DIR_NAME": "ads\\static",
+        "BUNDLE_DIR_NAME": "static",
         "STATS_FILE": os.path.join(
-            BASE_DIR, "ads\\static\\bundles\\webpack-stats.json"
+            BASE_DIR, "bundles/webpack-stats.json"
         ),
 
         "POLL_INTERVAL": 0.1,
@@ -332,7 +339,8 @@ DEBUG_TOOLBAR_CONFIG = {
 
 # EMAIL_BACKEND in down for a product
 # https://docs.djangoproject.com/en/4.2/topics/email/#smtp-backend
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # console
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" # IT's real email service
 # EMAIL_BACKEND in down for a development
 
 # https://docs.djangoproject.com/en/4.2/topics/email/#console-backend
@@ -344,15 +352,14 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_HOST
 # EMAIL_HOST = 'smtp.example.com' # Замените на адрес вашего SMTP-сервера
 # EMAIL_HOST = 'mail.privateemail.com'
-EMAIL_HOST = "smtp.yandex.ru"
+EMAIL_HOST = f"{EMAIL_HOST}"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_PORT
-EMAIL_PORT = 465  # 465
+EMAIL_PORT=465 # 465
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-user
-EMAIL_HOST_USER = f"{EMAIL_HOST_USER_}"
-# EMAIL_HOST_USER = 'noreply@custom-tools.online'
+EMAIL_HOST_USER = f"{EMAIL_HOST_USER}"
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-password
-EMAIL_HOST_PASSWORD = f"{EMAIL_HOST_PASSWORD_}"
+EMAIL_HOST_PASSWORD
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-ssl
 EMAIL_USE_SSL = True  # если порт 465
@@ -367,5 +374,5 @@ EMAIL_TIMEOUT = 60
 EMAIL_USE_LOCALTIME = True
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
-# EMAIL_SUBJECT_PREFIX = "activation_from_cloud"
+# EMAIL_SUBJECT_PREFIX
 

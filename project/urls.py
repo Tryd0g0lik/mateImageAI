@@ -20,14 +20,24 @@ from django.conf.urls.static import static
 from tomlkit import document
 
 from project.urls_api import urlpatterns as api_urls
-from person.urls import  urlpatterns as person_urls
+# from person.urls import  urlpatterns as person_urls
 from project import settings
+
+from rest_framework.routers import DefaultRouter
+from person.views_api.users_views import UserViews
+
+router = DefaultRouter()
+router.register("auth/register", UserViews, basename="register_key")
 urlpatterns = [
-path("", include((person_urls, "person_main"), namespace="person_main")),
+    path("", include(("person.urls", "person_app"), namespace="person_app")),
     path('admin/', admin.site.urls),
-    path("api/auth/", include((api_urls, "api_auth"), namespace="api_auth")),
-    path("register/", include((person_urls, "person_urls"), namespace="person_urls")),
+    path("api/", include((api_urls, "api_keys"), namespace="api_keys")),
+    # path("api/", include((router.urls, "api_keys"), namespace="api_keys")),
+    path('api-auth', include('rest_framework.urls', namespace='rest_framework')),
+
+
 
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+

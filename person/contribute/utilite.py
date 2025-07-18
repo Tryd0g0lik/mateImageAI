@@ -2,6 +2,9 @@ import re
 from django.core.signing import Signer
 from dotenv_ import (APP_PROTOCOL, APP_HOST, APP_PORT)
 from django.template.loader import render_to_string
+
+from person.models import Users
+
 signer = Signer()
 def send_activation_notificcation(user) -> bool:
     """
@@ -22,9 +25,9 @@ def send_activation_notificcation(user) -> bool:
 
 
         context = {
-            "user": user,
+            "username": user,
             "host": url,
-            "sign": signer.sign(user.username).replace(":", "_mull_")
+            "sign": signer.sign(user.username).replace(":", "_null_")
         }
         # LETTER 1
         subject = render_to_string(
@@ -35,14 +38,18 @@ def send_activation_notificcation(user) -> bool:
         file_name = "email/activation_letter_body.txt"
         if user.is_superuser:
             file_name = "email/activation_admin_letter_body.txt"
-        body_text = render_to_string(template_name=file_name,
+        body_text = render_to_string(template_name="email/activation_letter_body.txt",
                                      context=context)
         # RUN THE 'email_user' METHOD FROM BASIS THE uSER MODEL
         # https://docs.djangoproject.com/en/5.1/topics/email/
         user.email_user(
-            subject,
+            subject.replace("\n", ""),
             body_text
         )
+        user_db = Users.objects.get(pk=user.id)
+        user_db.is_sent = True
+        user_db.save()
+        _resp_bool = True
     except Exception as error:
         pass
     finally:

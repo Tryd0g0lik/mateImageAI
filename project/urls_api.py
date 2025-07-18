@@ -7,6 +7,8 @@ from django.urls import path, include
 
 
 urlpatterns = [
-    path("auth/", include(person_router.urls), name="person"),
+
+    path("auth/", include(person_router.urls), name="auth_key"),
+
     # path("metaimages/", meta_image_router, name="metaimages"),
 ]

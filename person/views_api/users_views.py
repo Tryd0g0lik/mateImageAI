@@ -38,11 +38,8 @@ class UserViews(ViewSet):
                 response.data = {"data": "OK"}
                 response.status = status.HTTP_201_CREATED
                 # SEND MESSAGE TO THE USER's EMAIL
-                user = Users()
-                user.password = serializer.data["name"]
-                user.email = serializer.data["email"]
-                user.password = serializer.data["password"]
-                signal_user_registered.send(data, instance=serializer)
+                user_ = Users.objects.get(pk=serializer.data["id"])
+                signal_user_registered.send(sender=self.create, data=data, isinstance=user_)
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 401
                 response.data = {"data": error}
@@ -52,6 +49,7 @@ class UserViews(ViewSet):
 
         response.data = {"data": "User was created before."}
         return response
+
     @staticmethod
     def get_hash_password(password: str) -> str:
         """

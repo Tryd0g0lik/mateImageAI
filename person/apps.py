@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 from django.dispatch import Signal
-from person.contribute.utilite import send_activation_notificcation
+
 
 class PersonConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -12,19 +12,20 @@ signal_user_registered = Signal(use_caching=False)
 
 def user_registered_dispatcher(sender, **kwargs) -> bool:
     """
-    TODO: This is a handler of signal. Send an activation message by \
+    This is a handler of signal. Send an activation message by \
         the user email.\
         This is interface from part from registration the new user.\
         Message, it contains the signature of link for authentication
         /
         All interface by the user's authentication in folder '**/contribute'  and \
         look up the  'signal_user_registered.send(....)' code, and
-        by module the 'cloud_user', plus the function 'user_activate' by \
-        module the 'cloud_user'.
+        by module the 'person', plus the function 'user_activate' by \
+        module the 'person'.
     :param sender:
     :param kwargs:
     :return: bool
     """
+    from person.contribute.utilite import send_activation_notificcation
     __text = "Function: %s" % user_registered_dispatcher.__name__
     _resp_bool = False
     try:
