@@ -8,8 +8,9 @@ from project.settings import (
     SESSION_COOKIE_AGE,
     SESSION_COOKIE_HTTPONLY,
     SESSION_COOKIE_SAMESITE,
-    SESSION_COOKIE_SECURE
+    SESSION_COOKIE_SECURE,
 )
+
 
 class Cookies:
     """

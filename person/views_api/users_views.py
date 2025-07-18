@@ -2,9 +2,7 @@ from dotenv_ import SECRET_KEY_DJ
 from person.hasher import PasswordHasher
 from person.models import Users
 from person.apps import signal_user_registered
-from rest_framework import (
-    serializers,
-    status)
+from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from adrf.viewsets import ViewSet
@@ -17,8 +15,8 @@ def serializer_validate(serializer):
     if not is_valid:
         raise serializers.ValidationError(serializer.errors)
 
-class UserViews(ViewSet):
 
+class UserViews(ViewSet):
 
     def create(self, request) -> type(Response):
         user = request.user
@@ -27,7 +25,9 @@ class UserViews(ViewSet):
         # CHECK IF USER EXISTS
         user_name_list = Users.objects.filter(username=data.get("username"))
         user_email_list = Users.objects.filter(email=data.get("email"))
-        if not user.is_authenticated and (not user_name_list.exists() or not user_email_list.exists()):
+        if not user.is_authenticated and (
+            not user_name_list.exists() or not user_email_list.exists()
+        ):
             try:
                 password = self.get_hash_password(request.data.get("password"))
                 serializer = UsersSerializer(data=data)
@@ -39,7 +39,9 @@ class UserViews(ViewSet):
                 response.status = status.HTTP_201_CREATED
                 # SEND MESSAGE TO THE USER's EMAIL
                 user_ = Users.objects.get(pk=serializer.data["id"])
-                signal_user_registered.send(sender=self.create, data=data, isinstance=user_)
+                signal_user_registered.send(
+                    sender=self.create, data=data, isinstance=user_
+                )
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 401
                 response.data = {"data": error}
@@ -65,4 +67,3 @@ class UserViews(ViewSet):
             return hash_password
         except Exception as error:
             raise ValueError(error)
-

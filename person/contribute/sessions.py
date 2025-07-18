@@ -49,8 +49,7 @@ def hash_check_user_session(pk: int, session_val: str) -> bool:
     """
     # Get b-code
     status_bool = False
-    log.info("[%s::hash_check_user_session]: START %s: ", (__name__, pk,
-                                                           session_val))
+    log.info("[%s::hash_check_user_session]: START %s: ", (__name__, pk, session_val))
     try:
         # GET B-CODE
         res = session_val.encode(encoding="utf-8")
@@ -72,8 +71,8 @@ Mistake => 'user_list' empty.'pk' invalid.",
             )
             raise ValueError(
                 "[%s::%s]: \
-Mistake => 'user_list' empty. 'pk' invalid." %
-                (__name__, hash_check_user_session.__name__),
+Mistake => 'user_list' empty. 'pk' invalid."
+                % (__name__, hash_check_user_session.__name__),
             )
         log.info("[%s::hash_check_user_session]: END", __name__)
     except Exception as e:
@@ -84,14 +83,13 @@ Mistake => %s: %s",
         )
         raise ValueError(
             "[%s::%s]: \
-Mistake => %s: %s" %
-            (__name__, hash_check_user_session.__name__, type(e), str(e)),
+Mistake => %s: %s"
+            % (__name__, hash_check_user_session.__name__, type(e), str(e)),
         ) from e
     return status_bool
 
 
-def hash_create_user_session(pk: int, session_key: str,
-                             live_time: int = 86400):
+def hash_create_user_session(pk: int, session_key: str, live_time: int = 86400):
     """
     TODO: Create the hash's value for 'session_key'.
      Time live is 86400 seconds\
@@ -142,14 +140,12 @@ cache.set was successful",
         status_bool = True
     except Exception as e:
         log.error(
-            "[%s::%s]: Mistake => %s: %s", (
-                __name__,
-                hash_create_user_session.__name__,
-                type(e), str(e)
-            ))
-        raise ValueError(
-            "[%s::%s]: Mistake => %s: %s" %
+            "[%s::%s]: Mistake => %s: %s",
             (__name__, hash_create_user_session.__name__, type(e), str(e)),
+        )
+        raise ValueError(
+            "[%s::%s]: Mistake => %s: %s"
+            % (__name__, hash_create_user_session.__name__, type(e), str(e)),
         ) from e
     finally:
         log.info("[%s::hash_create_user_session]: END", __name__)
@@ -221,16 +217,13 @@ value is the 86400 hours.
     log.info("[{__name__}::{update.__name__}]: START")
     try:
         status_bool = hash_create_user_session(pk, session_key, live_time)
-        log.info("[%s::%s]: status_bool: %s", (__name__, update.__name__,
-                                               status_bool))
+        log.info("[%s::%s]: status_bool: %s", (__name__, update.__name__, status_bool))
     except Exception as e:
         log.error(
-            "[%s::%s]: Mistake => %s: %s", (__name__, update.__name__,
-                                            type(e), str(e))
+            "[%s::%s]: Mistake => %s: %s", (__name__, update.__name__, type(e), str(e))
         )
         raise ValueError(
-            "[%s::%s]: Mistake => %s: %s" % (__name__, update.__name__,
-                                             type(e), str(e))
+            "[%s::%s]: Mistake => %s: %s" % (__name__, update.__name__, type(e), str(e))
         ) from e
     finally:
         log.info("[%s::%s]: END", (__name__, update.__name__))

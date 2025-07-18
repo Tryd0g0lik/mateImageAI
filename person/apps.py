@@ -3,12 +3,14 @@ from django.dispatch import Signal
 
 
 class PersonConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'person'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "person"
+
 
 # send message from the registration part
 # https://docs.djangoproject.com/en/4.2/topics/signals/#defining-signals
 signal_user_registered = Signal(use_caching=False)
+
 
 def user_registered_dispatcher(sender, **kwargs) -> bool:
     """
@@ -26,17 +28,16 @@ def user_registered_dispatcher(sender, **kwargs) -> bool:
     :return: bool
     """
     from person.contribute.utilite import send_activation_notificcation
+
     __text = "Function: %s" % user_registered_dispatcher.__name__
     _resp_bool = False
     try:
         res_bool = send_activation_notificcation(kwargs["isinstance"])
         _resp_bool = True
         if not res_bool:
-            raise ValueError(
-                f"Something what wrong. {__text}"
-            )
+            raise ValueError(f"Something what wrong. {__text}")
 
-    except Exception as e:
+    except Exception:
         _resp_bool = False
     finally:
         return _resp_bool

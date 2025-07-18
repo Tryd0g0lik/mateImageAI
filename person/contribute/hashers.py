@@ -4,19 +4,17 @@ Here is the own  hasher
 """
 
 import bcrypt
+
 # https://docs.djangoproject.com/en/4.2/topics/auth/passwords/#password-upgrading-without-requiring-a-login
-from django.contrib.auth.hashers import (
-    MD5PasswordHasher,
-    PBKDF2PasswordHasher,
-    md5
-)
+from django.contrib.auth.hashers import MD5PasswordHasher, PBKDF2PasswordHasher, md5
+
 
 class PBKDF2WrappedMD5PasswordHasher(PBKDF2PasswordHasher):
     """
     Class for a hashing password with PBKDF2 and MD5.
     """
-    algorithm = "pbkdf2_wrapped_md5"
 
+    algorithm = "pbkdf2_wrapped_md5"
 
     def encode_md5_hash(self, md5_hash, salt, iterations=None):
         """
@@ -28,7 +26,6 @@ class PBKDF2WrappedMD5PasswordHasher(PBKDF2PasswordHasher):
         """
         return super().encode(md5_hash, salt, iterations)
 
-
     def encode(self, secret_key, salt, iterations=None):
         """
         Method for the encoding.
@@ -38,9 +35,7 @@ a password text of user.
         :param iterations: This a operation's quantity for the hashing process.
         :return:
         """
-        _, _, md5_hash = MD5PasswordHasher().encode(secret_key, salt).split(
-            "$", 2
-        )
+        _, _, md5_hash = MD5PasswordHasher().encode(secret_key, salt).split("$", 2)
         return self.encode_md5_hash(md5_hash, salt, iterations)
 
 
@@ -57,6 +52,3 @@ a password text of user.
     # Password hash
     hashed_password = bcrypt.hashpw(secret_key.encode(encode), salt)
     return hashed_password
-
-
-

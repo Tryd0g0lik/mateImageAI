@@ -18,6 +18,8 @@ EMAIL_HOST = <smtp.email_host_of_sender - example: smtp.yandex.ru >
 EMAIL_HOST_USER=< own_email_adress_of_sender >
 EMAIL_HOST_PASSWORD=< own_email_password_of_sender >
 
+URL_REDIRECT_IF_NOTGET_AUTHENTICATION = < url_for_redirect_if_no_exists_athenticate >
+URL_REDIRECT_IF_GET_AUTHENTICATION = < url_for_redirect_if_exists_athenticate >
 ```
 
 
@@ -33,7 +35,13 @@ CMS Django переключена на асинхронную работу.\
 
 
 После изменений статических файлов \ 
-команда "`py manage.py collectstatic --clear --noinput`"
+команда "`py manage.py collectstatic --clear --noinput`"\
+"`pre-commit install`" установка hook-ов из "`.pre-commit-config.yaml`" файла. На выходе должны получить "`pre-commit installed at .git\hooks\pre-commit`".
+Если вы хотите запустить хуки на всех файлах проекта (например, при\
+добавлении новых хуков), используйте команду "`pre-commit run --all-files`".\
+
+Теперь будет  автоматически запускать перед каждым коммитомю\
+Стоп проверка "`git commit -m "Your commit message" --no-verify`" - флаг "`--no-verify`"
 
 
 При регистрации на почту отправляется сообщение, содержание\

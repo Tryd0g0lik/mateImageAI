@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('person', '0003_alter_users_balance_alter_users_created_at_and_more'),
+        ("person", "0003_alter_users_balance_alter_users_created_at_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='users',
-            name='is_sent',
-            field=models.BooleanField(default=False, help_text="Part is registration of new user.It is message sending to user's email. User indicates his email at the registrations moment.", verbose_name='Message was sent'),
+            model_name="users",
+            name="is_sent",
+            field=models.BooleanField(
+                default=False,
+                help_text="Part is registration of new user.It is message sending to user's email. User indicates his email at the registrations moment.",
+                verbose_name="Message was sent",
+            ),
         ),
     ]

@@ -6,38 +6,40 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('person', '0002_users_balance_users_created_at_users_is_verified_and_more'),
+        ("person", "0002_users_balance_users_created_at_users_is_verified_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='users',
-            name='balance',
-            field=models.PositiveIntegerField(default=0, verbose_name='balance'),
+            model_name="users",
+            name="balance",
+            field=models.PositiveIntegerField(default=0, verbose_name="balance"),
         ),
         migrations.AlterField(
-            model_name='users',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, verbose_name='created_at'),
+            model_name="users",
+            name="created_at",
+            field=models.DateTimeField(auto_now_add=True, verbose_name="created_at"),
         ),
         migrations.AlterField(
-            model_name='users',
-            name='is_verified',
-            field=models.BooleanField(default=False, verbose_name='is_verified'),
+            model_name="users",
+            name="is_verified",
+            field=models.BooleanField(default=False, verbose_name="is_verified"),
         ),
         migrations.AlterField(
-            model_name='users',
-            name='password',
-            field=models.CharField(max_length=255, verbose_name='password'),
+            model_name="users",
+            name="password",
+            field=models.CharField(max_length=255, verbose_name="password"),
         ),
         migrations.AlterField(
-            model_name='users',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, verbose_name='updated_at'),
+            model_name="users",
+            name="updated_at",
+            field=models.DateTimeField(auto_now=True, verbose_name="updated_at"),
         ),
         migrations.AlterField(
-            model_name='users',
-            name='verification_code',
-            field=models.CharField(blank=True, max_length=6, null=True, verbose_name='verification_code'),
+            model_name="users",
+            name="verification_code",
+            field=models.CharField(
+                blank=True, max_length=6, null=True, verbose_name="verification_code"
+            ),
         ),
     ]

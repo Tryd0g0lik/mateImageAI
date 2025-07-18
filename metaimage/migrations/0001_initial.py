@@ -15,54 +15,114 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Generations',
+            name="Generations",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('prompt', models.TextField()),
-                ('response', models.TextField()),
-                ('cost', models.IntegerField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("prompt", models.TextField()),
+                ("response", models.TextField()),
+                ("cost", models.IntegerField()),
             ],
             options={
-                'verbose_name': 'Generations',
-                'verbose_name_plural': 'Generations',
-                'db_table': 'Generations',
+                "verbose_name": "Generations",
+                "verbose_name_plural": "Generations",
+                "db_table": "Generations",
             },
         ),
         migrations.CreateModel(
-            name='Transactions',
+            name="Transactions",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('amount', models.PositiveIntegerField()),
-                ('type', models.CharField(max_length=50)),
-                ('description', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("amount", models.PositiveIntegerField()),
+                ("type", models.CharField(max_length=50)),
+                ("description", models.TextField(blank=True, null=True)),
             ],
             options={
-                'verbose_name': 'Transactions',
-                'verbose_name_plural': 'Transactions',
-                'db_table': 'Transactions',
+                "verbose_name": "Transactions",
+                "verbose_name_plural": "Transactions",
+                "db_table": "Transactions",
             },
         ),
         migrations.CreateModel(
-            name='UsersTransactions',
+            name="UsersTransactions",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('transactions_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_transactions', to='metaimage.transactions')),
-                ('user_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_transactions', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "transactions_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="user_transactions",
+                        to="metaimage.transactions",
+                    ),
+                ),
+                (
+                    "user_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="user_transactions",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='UsersGenerations',
+            name="UsersGenerations",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('generations_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_generations', to='metaimage.generations')),
-                ('user_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_generations', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "generations_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="user_generations",
+                        to="metaimage.generations",
+                    ),
+                ),
+                (
+                    "user_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="user_generations",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Users Generations',
-                'verbose_name_plural': 'Users Generations',
-                'db_table': 'UsersGenerations',
+                "verbose_name": "Users Generations",
+                "verbose_name_plural": "Users Generations",
+                "db_table": "UsersGenerations",
             },
         ),
     ]

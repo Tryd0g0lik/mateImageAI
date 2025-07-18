@@ -14,12 +14,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from tomlkit import document
 
 from project.urls_api import urlpatterns as api_urls
+
 # from person.urls import  urlpatterns as person_urls
 from project import settings
 
@@ -30,14 +32,10 @@ router = DefaultRouter()
 router.register("auth/register", UserViews, basename="register_key")
 urlpatterns = [
     path("", include(("person.urls", "person_app"), namespace="person_app")),
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
     path("api/", include((api_urls, "api_keys"), namespace="api_keys")),
     # path("api/", include((router.urls, "api_keys"), namespace="api_keys")),
-    path('api-auth', include('rest_framework.urls', namespace='rest_framework')),
-
-
-
+    path("api-auth", include("rest_framework.urls", namespace="rest_framework")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-

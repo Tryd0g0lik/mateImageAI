@@ -26,8 +26,10 @@ from person.cookies import Cookies
 from person.contribute.sessions import create_signer
 from person.contribute.utilite import signer
 from person.models import Users
-from dotenv_ import (URL_REDIRECT_IF_GET_AUTHENTICATION,
-                     URL_REDIRECT_IF_NOTGET_AUTHENTICATION)
+from dotenv_ import (
+    URL_REDIRECT_IF_GET_AUTHENTICATION,
+    URL_REDIRECT_IF_NOTGET_AUTHENTICATION,
+)
 from logs import configure_logging
 from project.settings import SESSION_COOKIE_AGE
 
@@ -73,15 +75,15 @@ code 301.\
     :return:
     """
     _text = f"[{user_activate.__name__}]:"
-    username = ''
+    username = ""
     try:
         log.info("%s START", _text)
         sign = str(sign).replace("_null_", ":")
         """
         person/urls.py
-        After sent the letter to the user's email, we receiving the 'sign' param.   
-        After, getting the the sign, it's value user's email(or username) in hash we getting 
-        a string of email(or username). 
+        After sent the letter to the user's email, we receiving the 'sign' param.
+        After, getting the the sign, it's value user's email(or username) in hash we getting
+        a string of email(or username).
         """
         username += signer.unsign(sign)
         # log.info("%s Get '_first_name': %s ", (_text, username))
@@ -98,10 +100,10 @@ code 301.\
     # https://docs.djangoproject.com/en/5.1/topics/http
     # /shortcuts/#get-object-or-404
     try:
-        """"
+        """ "
         Get object from db or 404 status-code.
-        We are checking user. 
-        Below, we will be change the active status of user. 
+        We are checking user.
+        Below, we will be change the active status of user.
         """
         user = get_object_or_404(Users, username=username)
         try:
@@ -148,7 +150,7 @@ from 'is_activated'.",
 
         return response
 
-    except Exception as e:        
+    except Exception as e:
         _text = f"{_text} Mistake => {str(e)}"
         # :-(
         return HttpResponseRedirect(

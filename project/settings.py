@@ -13,8 +13,8 @@ import os
 from pathlib import Path
 from datetime import timedelta, datetime
 from dotenv_ import (DB_ENGINE, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_USER,
-                     SECRET_KEY_DJ, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD,
-                     EMAIL_HOST)
+                     SECRET_KEY_DJ, SMTP_USER, SMTP_PASS,
+                     SMTP_HOST, SMTP_PORT)
 import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -349,17 +349,17 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # console
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-from-email
 # DEFAULT_FROM_EMAIL = f"smtp.{EMAIL_HOST_USER_}"
 
-# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_HOST
-# EMAIL_HOST = 'smtp.example.com' # Замените на адрес вашего SMTP-сервера
-# EMAIL_HOST = 'mail.privateemail.com'
-EMAIL_HOST = f"{EMAIL_HOST}"
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-SMTP_HOST
+# SMTP_HOST = 'smtp.example.com' # Замените на адрес вашего SMTP-сервера
+# SMTP_HOST = 'mail.privateemail.com'
+EMAIL_HOST = f"{SMTP_HOST}"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_PORT
-EMAIL_PORT=465 # 465
+EMAIL_PORT=int(SMTP_PORT) # 465
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-user
-EMAIL_HOST_USER = f"{EMAIL_HOST_USER}"
+EMAIL_HOST_USER = f"{SMTP_USER}"
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-password
-EMAIL_HOST_PASSWORD
+EMAIL_HOST_PASSWORD = f"{SMTP_PASS}"
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-ssl
 EMAIL_USE_SSL = True  # если порт 465
@@ -375,4 +375,3 @@ EMAIL_USE_LOCALTIME = True
 
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
 # EMAIL_SUBJECT_PREFIX
-
