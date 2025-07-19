@@ -55,3 +55,7 @@ CMS Django переключена на асинхронную работу.\
 
 Шаблоны для писем \
 "`templates/email`"
+## OpenaAPI 
+path: "`swagger/`"\
+path: "`redoc/`"\
+path: "`swagger<format>/`"

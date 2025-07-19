@@ -12,17 +12,12 @@ the function (below).
 
 """
 
-import logging
-from datetime import datetime
-
-from django.contrib.auth import login
+from datetime import datetime, timezone
 from django.core.cache import cache
 from django.core.signing import BadSignature
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-
-from person.cookies import Cookies
 from person.contribute.sessions import create_signer
 from person.contribute.utilite import signer
 from person.models import Users
@@ -30,16 +25,12 @@ from dotenv_ import (
     URL_REDIRECT_IF_GET_AUTHENTICATION,
     URL_REDIRECT_IF_NOTGET_AUTHENTICATION,
 )
-from logs import configure_logging
 from project.settings import SESSION_COOKIE_AGE
-
-configure_logging(logging.INFO)
-log = logging.getLogger(__name__)
 
 
 def user_activate(request, sign):
     """
-    TODO: From the *_user/serializers.py::UserSerializer.create the message \
+    From the *_user/serializers.py::UserSerializer.create the message \
 (contain referral link) go out to the user's email.\
 \
 Function changes the 'sign' of signer from the url 'activate/<str:sign>'.\
@@ -77,7 +68,6 @@ code 301.\
     _text = f"[{user_activate.__name__}]:"
     username = ""
     try:
-        log.info("%s START", _text)
         sign = str(sign).replace("_null_", ":")
         """
         person/urls.py
@@ -111,7 +101,6 @@ code 301.\
             # logging, it if return error
         except Exception as e:
             _text = " %s Get 'user': %s", (_text, e)
-        log.info(_text)
         # get the text from the basis value
         _text = (str(_text).split(":"))[0] + ":"
         # CHECK OF ACTIVATED
@@ -135,17 +124,14 @@ from 'is_activated'.",
         _text = (str(_text).split(":"))[0] + ":"
         user.is_active = True
         user.is_activated = True
-        user.date_joined = datetime.utcnow()
-        user.last_login = datetime.utcnow()
+        user.date_joined = datetime.now()
+        user.last_login = datetime.now()
         user.save()
         # CREATE SIGNER
         user_session = create_signer(user)
         cache.set(f"user_session_{user.id}", user_session, SESSION_COOKIE_AGE)
         """ New object has the `user_session_{id}` variable"""
-        redirect_url = (
-            f"{request.scheme}://{request.get_host()}"
-            f"{URL_REDIRECT_IF_GET_AUTHENTICATION}"
-        )
+        redirect_url = f"{request.scheme}://{request.get_host()}{URL_REDIRECT_IF_GET_AUTHENTICATION}"
         response = HttpResponseRedirect(redirect_url)
 
         return response
@@ -157,9 +143,3 @@ from 'is_activated'.",
             redirect_to=f"{request.scheme}://{request.get_host()}/",
             status=400,
         )
-    finally:
-        if "Mistake" in _text:
-            log.error(_text)
-        else:
-            _text = "Ok"
-            log.info(_text)

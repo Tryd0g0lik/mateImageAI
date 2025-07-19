@@ -379,6 +379,7 @@ EMAIL_USE_LOCALTIME = True
 # EMAIL_SUBJECT_PREFIX
 
 # SWAGGER
+# https://drf-yasg.readthedocs.io/en/stable/security.html#security-definitions
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {
@@ -389,8 +390,14 @@ SWAGGER_SETTINGS = {
     },
     'USE_SESSION_AUTH': False,
     'JSON_EDITOR': True,
+    'VALIDATOR_URL': None,
+    'exclude_namespaces':[
+        '/api/auth/register/0/login/\w+/login/'
+    ]
 }
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Your API',
+    'DESCRIPTION': 'Your project description',
     'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
