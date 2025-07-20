@@ -3,7 +3,6 @@
 
 ### Django ###
 *.log
-logs.py
 *.pot
 *.pyc
 local_settings.py

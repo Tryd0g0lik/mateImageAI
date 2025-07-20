@@ -7,39 +7,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('person', '0001_initial'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("person", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='users',
-            name='balance',
+            model_name="users",
+            name="balance",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='users',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
+            model_name="users",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True, default=django.utils.timezone.now
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='users',
-            name='is_verified',
+            model_name="users",
+            name="is_verified",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='users',
-            name='updated_at',
+            model_name="users",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='users',
-            name='verification_code',
+            model_name="users",
+            name="verification_code",
             field=models.CharField(blank=True, max_length=6, null=True),
         ),
         migrations.AddIndex(
-            model_name='users',
-            index=models.Index(fields=['is_active'], name='person_user_is_acti_26067e_idx'),
+            model_name="users",
+            index=models.Index(
+                fields=["is_active"], name="person_user_is_acti_26067e_idx"
+            ),
         ),
     ]

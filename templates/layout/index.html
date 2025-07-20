@@ -1,17 +1,37 @@
 <!DOCTYPE html>
 
-{% load bootstrap4 %}
-{% bootstrap_javascript jquery='full' %}
 {% load render_bundle from webpack_loader %}
 {% load static %}
 
-<!--<html lang = "ru" data-ds-theme='dark'>-->
-<html lang = "ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<html lang = "ru" data-ds-theme='dark-theme'>
 
-</body>
+  <head>
+    <meta charset = "UTF-8">
+<!--    , initial-scale=1-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <title>{% block title %}{{title}}{% endblock title %} - Page</title>
+    {% block maincssfiles %}
+
+      <link rel="stylesheet" type="text/css" href="{% static 'styles/index.css' %}">
+    {% endblock maincssfiles %}
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/index.css' %}">
+    {% block mainjsfiles %}
+    {% block cssfiles %} {% endblock cssfiles %}
+      <!--  { % render_bundle 'index' 'js' %}-->
+
+    {% endblock mainjsfiles %}
+
+    {% block jsfiles %}
+      {% for file in js_files %}
+        <script src="{% static '/' %}{{file}}"></script>
+      {% endfor %}
+    {% endblock jsfiles %}
+</head>
+<div id="body">
+    <div id="root"></div>
+</div>
 </html>

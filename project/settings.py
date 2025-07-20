@@ -13,7 +13,8 @@ import os
 from pathlib import Path
 from datetime import timedelta, datetime
 from dotenv_ import (DB_ENGINE, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_USER,
-                     SECRET_KEY_DJ)
+                     SECRET_KEY_DJ, SMTP_USER, SMTP_PASS,
+                     SMTP_HOST, SMTP_PORT)
 import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,8 +44,10 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     "daphne",
     'rest_framework',
+    'drf_spectacular',
     # 'bootstrap4',
     'corsheaders',
+    'drf_yasg',
     'adrf',
     "webpack_loader",
     'django.contrib.admin',
@@ -54,17 +57,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'person',
+    'metaimage',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    # "project.csrf.CustomCsrfMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -72,7 +78,9 @@ ROOT_URLCONF = 'project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, "templates"),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -151,14 +159,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-# STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR,  "static"),
-#     os.path.join(BASE_DIR,  "adboard/static"),
-#     os.path.join(BASE_DIR,  "ads/static"),
-#     # os.path.join(BASE_DIR,  "weather/static")
-# ]
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR,  "static"),
+]
 STATIC_ROOT = os.path.join(BASE_DIR,  "collectstatic/")
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -166,6 +171,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DEFAULT_CHARSET = "utf-8"
 AUTH_USER_MODEL = "person.Users"
+
+# '''Cookie'''
+SESSION_COOKIE_HTTPONLY = False  # CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # изменить на True CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"  # CSRF_COOKIE_SAMESITE = 'Lax'  # или 'Strict'
+SESSION_COOKIE_AGE = 86400
 
 
 # '''CORS'''
@@ -200,6 +211,7 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
+
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -221,9 +233,9 @@ WEBPACK_LOADER = {
     "DEFAULT": {
         "CACHE": not DEBUG,
         # 'BUNDLE_DIR_NAME': '..\\frontend\\src\\bundles',
-        "BUNDLE_DIR_NAME": "ads\\static",
+        "BUNDLE_DIR_NAME": "static",
         "STATS_FILE": os.path.join(
-            BASE_DIR, "ads\\static\\bundles\\webpack-stats.json"
+            BASE_DIR, "bundles/webpack-stats.json"
         ),
 
         "POLL_INTERVAL": 0.1,
@@ -239,7 +251,7 @@ WEBPACK_LOADER = {
         "LOADER_CLASS": "webpack_loader.loader.WebpackLoader",
     }
 }
-# '''Logging'''
+# '''lOGGING'''
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -256,6 +268,7 @@ LOGGING = {
     },
 }
 
+# """"DEBUG""""
 if DEBUG:  # Только в режиме разработки
     SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
@@ -266,7 +279,7 @@ if DEBUG:  # Только в режиме разработки
 #     })
 ''''Loging Authentication'''
 
-LOGIN_URL = '/users/login/'
+LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 # PASSWORD_RESET_TIMEOUT_DAYS = 1
@@ -277,6 +290,7 @@ AUTHENTICATION_BACKENDS = [
 
 """REST_FRAMEWORK SETTINGS"""
 # https://pypi.org/project/djangorestframework-simplejwt/4.3.0/
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/stateless_user_authentication.html
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -284,8 +298,8 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',  # Для работы с сессиями
         'rest_framework.authentication.TokenAuthentication',   # Опционально для API
-
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
     # "access_token_lifetime": TIMEDELTA(MILLISECONDS=TIMEDELTA(MINUTES=5).TOTAL_SECONDS()*1000),
     # "refresh_token_lifetime": TIMEDELTA(DAYS = TIMEDELTA(DAYS=1).TOTAL_SECONDS()*1000),
@@ -301,6 +315,7 @@ SIMPLE_JWT = {
 """REDIS & CELERY IN DJANGO"""
 # https://redis.io/
 # https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
+# https://docs.djangoproject.com/en/5.2/topics/cache/
 # 4. Configure Celery to use ....
 
 CACHES = {
@@ -327,12 +342,65 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": lambda request: True,
 }
 
-# # REDIS
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("redis", 6379)],
-#         },
-#     },
-# }
+# """EMAIL_BACKEND in down for a product"""
+# https://docs.djangoproject.com/en/4.2/topics/email/#smtp-backend
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # console
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" # IT's real email service
+# EMAIL_BACKEND in down for a development
+
+# https://docs.djangoproject.com/en/4.2/topics/email/#console-backend
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-from-email
+# DEFAULT_FROM_EMAIL = f"smtp.{EMAIL_HOST_USER_}"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-SMTP_HOST
+# SMTP_HOST = 'smtp.example.com' # Замените на адрес вашего SMTP-сервера
+# SMTP_HOST = 'mail.privateemail.com'
+EMAIL_HOST = f"{SMTP_HOST}"
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_PORT
+EMAIL_PORT=int(SMTP_PORT) # 465
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-user
+EMAIL_HOST_USER = f"{SMTP_USER}"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-host-password
+EMAIL_HOST_PASSWORD = f"{SMTP_PASS}"
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-ssl
+EMAIL_USE_SSL = True  # если порт 465
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-use-tls
+# EMAIL_USE_TLS = False
+# EMAIL_USE_TLS = True  # если порт 587
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-timeout
+EMAIL_TIMEOUT = 60
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-EMAIL_USE_LOCALTIME
+EMAIL_USE_LOCALTIME = True
+
+# https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
+# EMAIL_SUBJECT_PREFIX
+
+# """SWAGGER"""
+# https://drf-yasg.readthedocs.io/en/stable/security.html#security-definitions
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+    'JSON_EDITOR': True,
+    'VALIDATOR_URL': None,
+    'exclude_namespaces':[
+
+    ]
+}
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your API',
+    'DESCRIPTION': 'Your project description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
