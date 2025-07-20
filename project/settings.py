@@ -288,6 +288,7 @@ AUTHENTICATION_BACKENDS = [
 
 """REST_FRAMEWORK SETTINGS"""
 # https://pypi.org/project/djangorestframework-simplejwt/4.3.0/
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/stateless_user_authentication.html
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',

@@ -13,6 +13,8 @@ the function (below).
 """
 
 from datetime import datetime, timezone
+
+from django.contrib.auth import authenticate, login
 from django.core.cache import cache
 from django.core.signing import BadSignature
 from django.http import HttpResponseRedirect
@@ -127,13 +129,17 @@ from 'is_activated'.",
         user.date_joined = datetime.now()
         user.last_login = datetime.now()
         user.save()
+        # GET AUTHENTICATION
+        user = authenticate(request, username=user.username, password=user.password)
+        if user is not None:
+            login(request, user)
         # CREATE SIGNER
         user_session = create_signer(user)
         cache.set(f"user_session_{user.id}", user_session, SESSION_COOKIE_AGE)
         """ New object has the `user_session_{id}` variable"""
         redirect_url = f"{request.scheme}://{request.get_host()}{URL_REDIRECT_IF_GET_AUTHENTICATION}"
         response = HttpResponseRedirect(redirect_url)
-
+        response.status_code = status.HTTP_200_OK
         return response
 
     except Exception as e:

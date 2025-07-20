@@ -9,6 +9,10 @@ from django.utils.translation import gettext_lazy as _
 
 # REGISTRATION
 class UsersSerializer(serializers.ModelSerializer):
+    """
+    This is the basis serialize of 'person/views_api/users_views.py::UserViews'
+    """
+
     class Meta:
         model = Users
         fields = ["id", "username", "email", "password"]
@@ -20,8 +24,10 @@ class UsersSerializer(serializers.ModelSerializer):
 
 # https://www.django-rest-framework.org/api-guide/fields/
 class UserResponseSerializer200(serializers.Serializer):
-    # data = serializers.CharField(default="OK")
-    # status = serializers.IntegerField(default=200,)
+    """
+    This is data we need to get from the 'response.data' and 'response.status_code'.
+    """
+
     data = serializers.CharField(default="OK")
     status = serializers.IntegerField(
         default=200,
@@ -40,15 +46,15 @@ class ErrorResponseSerializer(serializers.Serializer):
 
 
 # LOGIN - STATUS CODE 200
-class UsersRequestLoginSerializer(serializers.Serializer):
-    """
-    This is data we need to get from the 'request.data'.
-    :param str username:
-    :param str password:
-    """
-
-    username = serializers.CharField(required=True, max_length=150)
-    password = serializers.CharField(required=True, max_length=255)
+# class UsersRequestLoginSerializer(serializers.Serializer):
+#     """
+#     This is data we need to get from the 'request.data'.
+#     :param str username:
+#     :param str password:
+#     """
+#
+#     username = serializers.CharField(required=True, max_length=150)
+#     password = serializers.CharField(required=True, max_length=255)
 
 
 class TokenSerializer200(serializers.Serializer):

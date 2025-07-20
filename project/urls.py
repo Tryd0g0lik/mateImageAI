@@ -24,6 +24,10 @@ from project.urls_api import urlpatterns as api_urls
 from project import settings
 from rest_framework.permissions import AllowAny
 
+from project.views import CSRFTokenView
+
+# from project.views import csrf_token
+
 # SWAGGER DOC
 # https://drf-yasg.readthedocs.io/en/stable/readme.html#configuration
 # https://www.django-rest-framework.org/api-guide/schemas/

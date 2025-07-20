@@ -1,10 +1,16 @@
+import base64
+import pickle
+
+from asgiref.sync import sync_to_async
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
 from person.models import Users
 from typing import Optional, Dict
 
 
-class AccessToken:
-    def __init__(self, user_object: Optional[Users]):
+class AccessToken(JWTAuthentication):
+    def __init__(self, user_object: Optional[Users] = None):
         self.user_object = user_object
 
     async def async_token(self):
@@ -17,7 +23,8 @@ class AccessToken:
                 {"token_refresh": "< refresh_token >", "live_time": "< life_time_of_token >"}
             }
         """
-
+        if not self.user_object:
+            raise ValueError("Invalid user")
         tokens = await self.__async_generate_jwt_token(self.user_object)
         return tokens
 
@@ -46,3 +53,50 @@ class AccessToken:
             return token
         except Exception as ex:
             raise ValueError("Value Error: %s" % ex)
+
+    async def get_user_from_token(self, request) -> type(Users):
+        """
+        This method is used for getting the user object from the token.
+        """
+        try:
+            bytes_token: bytes = None
+
+            """GET TOKENS FROM THE HEADERS"""
+            # origin_token_access = request.COOKIES.get("token_access")
+            origin_token_access = request.META.get("HTTP_ACCESSTOKEN").split(" ")[1]
+            # origin_token_refresh = request.COOKIES.get("token_refresh")
+            # origin_token_refresh = request.COOKIES.get("token_refresh")
+
+            if not origin_token_access:  # and not origin_token_refresh:
+                raise ValueError("Invalid token")
+
+            if origin_token_access:
+                bytes_token = self.string_to_byte_tokens(origin_token_access)
+            # elif not origin_token_refresh:
+            #     bytes_token = self.string_to_byte_tokens(origin_token_refresh)
+            if not bytes_token:
+                raise ValueError("Invalid token")
+            # """GET USER ID AND USER NAME"""
+            obj = pickle.loads(bytes_token)
+            user_id = obj.payload["user_id"]
+            user_name = obj.payload["name"]
+            user = await sync_to_async(Users.objects.get)(
+                id=int(user_id), username=user_name
+            )
+
+            return user
+        except Exception as error:
+            raise AuthenticationFailed(error)
+
+    @staticmethod
+    def string_to_byte_tokens(string: str) -> bytes:
+        """
+        This method for converting from string to bytes
+        :param string: string for convert to bytes
+        :return: byte string
+        """
+        try:
+            byte_string = base64.b64decode(string)
+            return byte_string
+        except Exception as ex:
+            raise ValueError(f"Error converting to bytes: {ex}")
