@@ -31,6 +31,7 @@ from project.views import CSRFTokenView
 # SWAGGER DOC
 # https://drf-yasg.readthedocs.io/en/stable/readme.html#configuration
 # https://www.django-rest-framework.org/api-guide/schemas/
+# https://docs.swagger.io/spec.html#41-format
 schema_view = get_schema_view(
     openapi.Info(
         title="MateImageAI API",

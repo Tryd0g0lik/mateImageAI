@@ -25,11 +25,11 @@ def send_activation_notificcation(user) -> bool:
         if APP_PORT:
             APP_PROTOCOL, APP_HOST,
             url += f":{APP_PORT}"
-
+        verification_code = signer.sign(user.username).replace(":", "_null_")
         context = {
             "username": user,
             "host": url,
-            "sign": signer.sign(user.username).replace(":", "_null_"),
+            "sign": verification_code,
         }
         # LETTER 1
         subject = render_to_string(
@@ -48,6 +48,7 @@ def send_activation_notificcation(user) -> bool:
         user.email_user(subject.replace("\n", ""), body_text)
         user_db = Users.objects.get(pk=user.id)
         user_db.is_sent = True
+        user.verification_code = (str(verification_code).split("_null_"))[1]
         user_db.save()
         _resp_bool = True
     except Exception:

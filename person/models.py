@@ -1,3 +1,4 @@
+from django.core.validators import MinLengthValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
@@ -39,9 +40,17 @@ to user's email. User indicates his email at the registrations moment."
     )
     is_verified = models.BooleanField(_("is_verified"), default=False)
     verification_code = models.CharField(
-        _("verification_code"), max_length=6, blank=True, null=True
+        _("verification_code"),
+        max_length=150,
+        blank=True,
+        null=True,
+        validators=[MinLengthValidator(50)],
     )
-    balance = models.PositiveIntegerField(_("balance"), default=0)
+    balance = models.FloatField(
+        _("balance"),
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
     created_at = models.DateTimeField(
         _("created_at"),
         auto_now_add=True,

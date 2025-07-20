@@ -1,12 +1,11 @@
 import time
 from contextlib import nullcontext
 from datetime import datetime
-from tkinter.scrolledtext import example
 
 from colorful.terminal import TRUE_COLORS
 from django.middleware.csrf import get_token
 from asgiref.sync import sync_to_async
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from drf_yasg import openapi
@@ -29,6 +28,7 @@ from rest_framework.decorators import permission_classes
 from person.serializers import (
     UsersSerializer,
     TokenReqponseLoginSerializer200,
+    UsersForSuperuserSerializer,
 )
 from drf_yasg.utils import swagger_auto_schema
 from person.serializers import (
@@ -46,6 +46,221 @@ def serializer_validate(serializer):
 
 
 class UserViews(ViewSet):
+
+    @swagger_auto_schema(
+        operation_description="""
+        User admin can get all users list.
+        Permissions if you is superuser.
+        """,
+        tags=["person"],
+        responses={
+            200: openapi.Response(
+                description="Users array",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    # required=['id', "username", "password", "first_name", "last_login"],
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "id": openapi.Schema(type=openapi.TYPE_INTEGER, example=12),
+                            "username": openapi.Schema(
+                                example="nH2qGiehvEXjNiYqp3bOVtAYv....",
+                                type=openapi.TYPE_STRING,
+                            ),
+                            "first_name": openapi.Schema(
+                                type=openapi.TYPE_STRING, example=""
+                            ),
+                            "last_name": openapi.Schema(
+                                type=openapi.TYPE_STRING, example=""
+                            ),
+                            "last_login": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example="2025-07-20 00:39:14.739 +0700",
+                            ),
+                            "is_superuser": openapi.Schema(
+                                type=openapi.TYPE_BOOLEAN,
+                                example=False,
+                            ),
+                            "is_staff": openapi.Schema(
+                                type=openapi.TYPE_BOOLEAN,
+                                example=False,
+                                description="user got permissions how superuser or not.",
+                            ),
+                            "is_active": openapi.Schema(
+                                type=openapi.TYPE_BOOLEAN,
+                                example=False,
+                            ),
+                            "date_joined": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example="2025-07-20 00:39:14.739 +0700",
+                            ),
+                            "created_at": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example="2025-07-20 00:39:14.739 +0700",
+                            ),
+                            "balance": openapi.Schema(
+                                type=openapi.TYPE_NUMBER, example="12587.268"
+                            ),
+                            "verification_code": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example="_null_jOePj2i769OQ4XsFPihlA....",
+                                description="""
+                            '<username>_null_jOePj2i769OQ4XsFPihlA....'
+                            This is a code from  referral link.
+                            """,
+                            ),
+                            "is_sent": openapi.Schema(
+                                type=openapi.TYPE_BOOLEAN,
+                                example=True,
+                                description="""
+                            Referral link was sent by user email address.
+                            """,
+                            ),
+                        },
+                    ),
+                ),
+            ),
+            401: "User admin is invalid",
+            500: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                title="Mistake",
+                properties={
+                    "data": openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                    )
+                },
+            ),
+        },
+    )
+    def list(self, request) -> type(Response):
+        """
+        Superuser can get the users array of data.
+        :param request:
+        :return:
+        ```js
+            [
+                {
+                    "id": 46,
+                    "last_login": "2025-07-20T11:23:13.016496+07:00",
+                    "is_superuser": false,
+                    "username": "Sergey",
+                    "first_name": "",
+                    "last_name": "",
+                    "email": "work80@mail.ru",
+                    "is_staff": true,
+                    "is_active": true,
+                    "date_joined": "2025-07-19T12:56:26.340392+07:00",
+                    "is_sent": true,
+                    "is_verified": true,
+                    "verification_code": "_null_jOePj2i769OQ4XsFPihlAVpH6RGN_idjsycxU6-WfRo",
+                    "balance": 0,
+                    "created_at": "2025-07-19T11:34:32.928150+07:00",
+                    "updated_at": "2025-07-20T11:23:13.016496+07:00"
+                },
+                {
+                    "id": 47,
+                    "last_login": "2025-07-20T11:09:29.910079+07:00",
+                    "is_superuser": false,
+                    "username": "Denis",
+                    "first_name": "",
+                    "last_name": "",
+                    "email": "work80@mail.ru",
+                    "is_staff": false,
+                    "is_active": true,
+                    "date_joined": "2025-07-20T11:09:29.460076+07:00",
+                    "is_sent": true,
+                    "is_verified": true,
+                    "verification_code": "_null_jOePj2i769OQ4XsFPihlAVpH6RGN_idjsycxU6-WfRo",
+                    "balance": 0,
+                    "created_at": "2025-07-20T10:57:47.979716+07:00",
+                    "updated_at": "2025-07-20T11:09:30.390933+07:00"
+                }
+            ]
+        ```
+        """
+        user = request.user
+        if user.is_active and user.is_staff:
+            try:
+                queryset = Users.objects.all()
+                serializer = UsersForSuperuserSerializer(queryset, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Exception as error:
+                return Response(
+                    {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        return Response(
+            {"data": "User admin is invalid"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    @swagger_auto_schema(
+        operation_description=""""
+            You can gat data if you is the superuser or
+             index (it's parameter from the url path) for what retrieve data single user (if user index is pk).
+
+        """,
+        tags=["person"],
+        manual_parameters=[
+            openapi.Parameter(
+                name="id",
+                title="pk",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+                example=54,
+                format=openapi.FORMAT_INT64,
+            )
+        ],
+        responses={
+            200: UsersForSuperuserSerializer,
+            401: ErrorResponseSerializer,
+            500: ErrorResponseSerializer,
+        },
+    )
+    def retrieve(self, request, pk) -> type(Response):
+        """
+        :param request:
+        :param int pk: User index (it's parameter from the url path) for what retrieve data single user (index which is pk)
+        :return:
+        ```js
+            [
+                {
+                    "id": 46,
+                    "last_login": "2025-07-20T11:23:13.016496+07:00",
+                    "is_superuser": false,
+                    "username": "Sergey",
+                    "first_name": "",
+                    "last_name": "",
+                    "email": "work80@mail.ru",
+                    "is_staff": true,
+                    "is_active": true,
+                    "date_joined": "2025-07-19T12:56:26.340392+07:00",
+                    "is_sent": true,
+                    "is_verified": true,
+                    "verification_code": "_null_jOePj2i769OQ4XsFPihlAVpH6RGN_idjsycxU6-WfRo",
+                    "balance": 0,
+                    "created_at": "2025-07-19T11:34:32.928150+07:00",
+                    "updated_at": "2025-07-20T11:23:13.016496+07:00"
+                }
+            ]
+        ```
+        """
+        user = request.user
+        if pk and user.is_active and (user.is_staff or user.id == int(pk)):
+            try:
+                queryset = Users.objects.all()
+                user = get_object_or_404(queryset, pk=int(pk))
+                if not user:
+                    Response(
+                        {"data": "'pk' is invalid"}, status=status.HTTP_401_UNAUTHORIZED
+                    )
+                serializer = UsersForSuperuserSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Exception as error:
+                return Response(
+                    {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        return Response(
+            {"data": "User or 'pk' is invalid"}, status=status.HTTP_401_UNAUTHORIZED
+        )
 
     @swagger_auto_schema(
         operation_description="""
@@ -73,7 +288,6 @@ class UserViews(ViewSet):
         },
         tags=["person"],
     )
-    @permission_classes([AllowAny])
     def create(self, request) -> type(Response):
         user = request.user
         data = request.data
@@ -205,6 +419,7 @@ class UserViews(ViewSet):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             try:
+                ## Вынести в отжельную фунцию
                 user_one.last_login = datetime.now()
                 # SAVE USER
                 await sync_to_async(user_one.save)()

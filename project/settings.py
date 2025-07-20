@@ -42,7 +42,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    # "daphne",
+    "daphne",
     'rest_framework',
     'drf_spectacular',
     # 'bootstrap4',
@@ -211,6 +211,7 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
+
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -250,7 +251,7 @@ WEBPACK_LOADER = {
         "LOADER_CLASS": "webpack_loader.loader.WebpackLoader",
     }
 }
-# '''Logging'''
+# '''lOGGING'''
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -267,6 +268,7 @@ LOGGING = {
     },
 }
 
+# """"DEBUG""""
 if DEBUG:  # Только в режиме разработки
     SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
@@ -277,7 +279,7 @@ if DEBUG:  # Только в режиме разработки
 #     })
 ''''Loging Authentication'''
 
-LOGIN_URL = '/users/login/'
+LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 # PASSWORD_RESET_TIMEOUT_DAYS = 1
@@ -340,7 +342,7 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": lambda request: True,
 }
 
-# EMAIL_BACKEND in down for a product
+# """EMAIL_BACKEND in down for a product"""
 # https://docs.djangoproject.com/en/4.2/topics/email/#smtp-backend
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # console
 # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" # IT's real email service
@@ -379,7 +381,7 @@ EMAIL_USE_LOCALTIME = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#email-subject-prefix
 # EMAIL_SUBJECT_PREFIX
 
-# SWAGGER
+# """SWAGGER"""
 # https://drf-yasg.readthedocs.io/en/stable/security.html#security-definitions
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -393,7 +395,7 @@ SWAGGER_SETTINGS = {
     'JSON_EDITOR': True,
     'VALIDATOR_URL': None,
     'exclude_namespaces':[
-        '/api/auth/register/0/login/\w+/login/'
+
     ]
 }
 SPECTACULAR_SETTINGS = {

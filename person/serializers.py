@@ -18,6 +18,16 @@ class UsersSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "password"]
 
 
+class UsersForSuperuserSerializer(serializers.ModelSerializer):
+    """
+    This is the basis serialize of 'person/views_api/users_views.py::UserViews'
+    """
+
+    class Meta:
+        model = Users
+        exclude = ["password", "user_permissions", "groups"]
+
+
 # SWAGGER BELOW
 # REGISTRATION AND LOGIN
 

@@ -118,14 +118,14 @@ from 'is_activated'. Redirect. 301",
             )
             return response
         _text = (
-            " %s the object 'user' can not have 'True' value \
-from 'is_activated'.",
+            "Mistake: %s ",
             _text,
         )
         # get the text from the basis value
         _text = (str(_text).split(":"))[0] + ":"
         user.is_active = True
         user.is_activated = True
+        user.is_verified = True
         user.date_joined = datetime.now()
         user.last_login = datetime.now()
         user.save()
