@@ -1,10 +1,11 @@
 # MateImageAI API
-[ENG README файл](./README_ENG.md).
+[RUS README file](./README.md).
 
-Представленная информация для backend части.\
-[Frontend представлен](https://github.com/Tryd0g0lik/mateImageAI_frontend) в виде отдельного проекта.
+I present information for the backend part.\
+[Frontend presented](https://github.com/Tryd0g0lik/mateImageAI_frontend). It's views how separated project. 
 
-- "`swagger_for_postman.yml`" пример swagger.
+
+- "`swagger_for_postman.yml`" exemple of swagger.
 
 ## Tree
 ```text
@@ -77,7 +78,7 @@ mateImageAI/
 ## A working is backend's stack
 
 <details close>
-<summary>Рабочий стек зависимостей</summary>
+<summary>This's a working stack of independence</summary>
 
 ```pyproject.toml
     [tool.poetry.dependencies]
@@ -133,20 +134,20 @@ py manage.py collectstatic --clear --noinput
 py manage.py runserver
 ```
 
-- "`makemigrations`" если необходимо обновить сборку;
-- "`migrate`" - создаём или обновляем базу данных;
-- "`collectstatic`" - собираем всю статику в одну директорию. Сделать перед запуском сервера! Флаг "`--clear`" - очистит от старых файлов,  "`--noinput`" - не потребуется вносить комментарии;
-- "`runserver`" - Проект (имеет зависимости - redis, channels, celery, option django async и) основан на "`daphne`" server. 
+- "`makemigrations`" if you need update collection;
+- "`migrate`" - creating (or updating) the structures of db;
+- "`collectstatic`" - If we need collect all static files in single directory. Flag "`--clear`" clearn from old files,  "`--noinput`" - It you don't want, every time writing the commit by everyone process;
+- "`runserver`" - Project (it has dependence the redis, channels, celery, option django async and) is based on the "`daphne`" server.   
 
 ## project.settings.py
 
-- "`AUTH_USER_MODEL = "person.Users"`" База данных (*основная рабочая таблица данных есть "`User`" для Django*), Изаменил на "`Users`" конфигурацию;
-- "`REST_FRAMEWORK`" настройки JWT-token;
-- "`SIMPLE_JWT`" настройки основных токенов ("`access_token`" and "`refresh_token`"); 
-- "`CACHES`" настройки раоботы с "`Celery`", "`Redis`";
-- "`SWAGGER_SETTINGS`", "`SPECTACULAR_SETTINGS`" - SWAGGER Настройки формирования документации.
+- "`AUTH_USER_MODEL = "person.Users"`"Db (*basis a working table is "`User`", it, by default for django*). I changed it to the "`Users`" format (in "`person.mode`)");
+- "`REST_FRAMEWORK`" setting to the JWT-token;
+- "`SIMPLE_JWT`" settings of basis user tokens ("`access_token`" and "`refresh_token`"); 
+- "`CACHES`" optins a work the "`Celery`" and "`Redis'";
+- "`SWAGGER_SETTINGS`", "`SPECTACULAR_SETTINGS`" - SWAGGER (OpenAPI).
 
-### URL для просмотра:
+### URL for view:
 - "`{{url}}/swagger/`";
 - "`{{url}}/redoc/`";
 - "`{{url}}/swagger<format>//`";
@@ -214,7 +215,7 @@ CORS_ALLOW_HEADERS = [
 </details>
 
 ### '''WEBPACK_LOADER'''
-В ражиме разработки, в браузере можем работать с файлами "`TS`", "`TSX`"
+For development mode, when we can working the "`TS`", "`TSX`" files in directly with browser. 
 ```
 WEBPACK_LOADER = {
     "DEFAULT": {
@@ -241,7 +242,7 @@ WEBPACK_LOADER = {
 ```
 
 ### '''lOGGING'''
-Для логирования можно использовать "`logs.py`".
+For logging, you can use "`logs.py`".
 
 ```
 LOGGING = {
@@ -268,8 +269,10 @@ if DEBUG:  # Только в режиме разработки
 ```
 ### """EMAIL_BACKEND"""
 <details close>
-<summary>Настроки для EMAIL-аутентификации</summary>
-- "`templates/email`" маршрут файлов с шаблоннами писем для пользователя.
+<summary>Options for EMAIL-authenticate</summary>
+- "`templates/email`" - path for the pattern files for letters to the user .
+
+![email_post](./img/email_post.png)\
 
 ```
 # https://docs.djangoproject.com/en/4.2/topics/email/#smtp-backend
@@ -336,36 +339,18 @@ URL_REDIRECT_IF_NOTGET_AUTHENTICATION = < url_for_redirect_if_no_exists_athentic
 URL_REDIRECT_IF_GET_AUTHENTICATION = < url_for_redirect_if_exists_athenticate >
 ```
 
-## DB 
-- DOCKER на "`HTTP`" "`83.166.245.209`"\
-- База данных postgres, работает через порт 5433\
-- "`DATABASE_URL=redis://83.166.245.209:6380/0`"\
-
-## Прочее
-После изменений статических файлов \ 
+## Other 
 команда "`py manage.py collectstatic --clear --noinput`"\
-"`pre-commit install`" установка hook-ов из "`.pre-commit-config.yaml`" файла. На выходе должны получить "`pre-commit installed at .git\hooks\pre-commit`". \
-Если вы хотите запустить хуки на всех файлах проекта (например, при\
-добавлении новых хуков), используйте команду "`pre-commit run --all-files`".\
+"`pre-commit install`" and  the file "`.pre-commit-config.yaml`". We able  get  "`pre-commit installed at .git\hooks\pre-commit`".\
+It if we want to run hooks (through command "`pre-commit run`") for chacking the code syntax.
 
-Теперь будет  автоматически запускать перед каждым коммитомю\
-Стоп проверка "`git commit -m "Your commit message" --no-verify`" - флаг "`--no-verify`"
+- After you running command "`pre-commit run --all-files`"  will be the auto-check after "`git commit`" \
+- Flag "`--no-verify`" using for command "`git commit`" will cancel the check. Example:  "`git commit -m "Your commit message" --no-verify`"
 
 
 ## Регистрация пользователя
 При регистрации, под капотом отправляется сигнал.\
 Сигнал принимаетс `person/contribute/utilite.py`" и отправляет письмо.
-
-На почту отправляется сообщение, содержание\
-![email_post](./img/email_post.png)\
-
-После того как пользователь кликает по ссылке (у себя на почте)\ 
-"`user_activate`" Срабатывает маршрутизатор (из "`person/urls.py`").  Урл содержит подпись. Её то и передаём в "`person/contribute/controler_activate.py`. \ 
-После получаем авторизованного пользователя (БЕЗ ТОКЕНОВ !!!). 
-
-*Note*: \
-*На момент составления описания, с токенами есть упущеннмие*.\
-*Логику вынесу в отдельную функцию. После доработки front-fcnt можно подумать как, токены запустить в отдельном канале*.  
 
 
 ## OpenAPI 
@@ -374,15 +359,17 @@ path: "`redoc/`"\
 path: "`swagger<format>/`"
 
 
-- '`POST`' "`{{url_basis}}/api/auth/register/`" - Регистрация пользователя.
-- '`GET`' "`{{url_basis}}/api/auth/register/`" - Для user admin. Должны получить список пользователей.
-- '`GET`' "`{{url_basis}}/api/auth/register/<int:pk>`" - Возвращает данные одного пользователя.
-- "`PATCH`" "`{{url_basis}}/api/auth/register/<int:pk>/logout/`" Выход из профиля.
-- "`POST`" "`{{url_basis}}/api/auth/register/0/login/`" Для астивизации профиля.
-- "`GET`" "`{{url_basis}}/api/auth/csrftoken/`" Когда необходимо получить csrf token.
-- "`GET`" "`{{url_basis}}/activate/< referral key from the referral link>/`" Пример: "`/activate/Sergey_null_MzSS4C6FWiCakl9ZtQ_x3QbJHbLokXOdKU03sYQkxsk/`".\
-Referral link содержит криптографическую подпись из  "`username`". Шаблон referral link - "`< first_name >_null_< username >`". \
-Затем ключ, делим по подстроке  "`_null_`" и после работаем с подписью.  
+- '`POST`' "`{{url_basis}}/api/auth/register/`" - User registration.
+- '`GET`' "`{{url_basis}}/api/auth/register/`" - for user admin. His  will would to get a list of all users.
+- '`GET`' "`{{url_basis}}/api/auth/register/<int:pk>`" - If you want to get data for one user.
+- "`PATCH`" "`{{url_basis}}/api/auth/register/<int:pk>/logout/`" For logout of user.
+- "`POST`" "`{{url_basis}}/api/auth/register/0/login/`" For login of user.
+- "`GET`" "`{{url_basis}}/api/auth/csrftoken/`" If you need to get the csrf token.
+- "`GET`" "`{{url_basis}}/activate/< referral key from the referral link>/`" Example: "`/activate/Sergey_null_MzSS4C6FWiCakl9ZtQ_x3QbJHbLokXOdKU03sYQkxsk/`".\
+Referral link contain cryptographically a sign. of username. Pattern for a referral link is "`< first_name >_null_< username >`". \
+Then this key, we split by substring "`_null_" and after will work to the sign.  
+ 
+
 
 ### swagger format
 ![email_post](./img/swagger.png)\
