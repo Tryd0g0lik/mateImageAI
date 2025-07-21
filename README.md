@@ -72,7 +72,7 @@ mateImageAI/
 
 ```
 
-## A work is backend's stack
+## A working is backend's stack
 
 <details close>
 <summary>Рабочий стек зависимостей</summary>
