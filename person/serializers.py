@@ -1,7 +1,6 @@
-from asyncio import shield
-
 from django.core.validators import MinValueValidator, MinLengthValidator
 from rest_framework import serializers
+from adrf.serializers import ModelSerializer
 from rest_framework import status
 from person.models import Users
 from django.utils.translation import gettext_lazy as _
@@ -16,10 +15,19 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ["id", "username", "email", "password"]
+class Async_UsersSerializer(ModelSerializer):
+    """
+    This Async the basis serialize of 'person/views_api/users_views.py::UserViews'
+    """
+
+    class Meta:
+        model = Users
+        fields = ["id", "username", "email", "password"]
 
 
 class UsersForSuperuserSerializer(serializers.ModelSerializer):
     """
+    FOr swapper
     This is the basis serialize of 'person/views_api/users_views.py::UserViews'
     """
 
@@ -35,6 +43,7 @@ class UsersForSuperuserSerializer(serializers.ModelSerializer):
 # https://www.django-rest-framework.org/api-guide/fields/
 class UserResponseSerializer200(serializers.Serializer):
     """
+    For swapper
     This is data we need to get from the 'response.data' and 'response.status_code'.
     """
 
@@ -44,27 +53,16 @@ class UserResponseSerializer200(serializers.Serializer):
     )
 
 
-# class UserResponseAccessSerialiser(serializers.ModelSerializer):
-
-
 class ErrorResponseSerializer(serializers.Serializer):
+    """
+    For swapper
+    """
     data = serializers.CharField()
     error = serializers.CharField(required=False, default=None)
     status_code = serializers.IntegerField(
         required=False, default=status.HTTP_401_UNAUTHORIZED
     )
 
-
-# LOGIN - STATUS CODE 200
-# class UsersRequestLoginSerializer(serializers.Serializer):
-#     """
-#     This is data we need to get from the 'request.data'.
-#     :param str username:
-#     :param str password:
-#     """
-#
-#     username = serializers.CharField(required=True, max_length=150)
-#     password = serializers.CharField(required=True, max_length=255)
 
 
 class TokenSerializer200(serializers.Serializer):

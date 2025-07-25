@@ -1,5 +1,5 @@
 """
-person/tasks/task_ready.py
+person/tesks/task_ready.py
 """
 
 import threading

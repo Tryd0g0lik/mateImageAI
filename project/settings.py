@@ -28,11 +28,10 @@ SECRET_KEY = f'{SECRET_KEY_DJ}'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+# '83.166.245.209',
 ALLOWED_HOSTS = [
-    '83.166.245.209',
-    '0.0.0.0',
     '127.0.0.1',
+    '0.0.0.0',
     'localhost',
     "manul.info",
 ]
@@ -101,13 +100,24 @@ ASGI_APPLICATION = "project.asgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': f'{DB_ENGINE}',
-        'NAME': f'{POSTGRES_DB}',
-        'USER': f'{POSTGRES_USER}',
-        'PASSWORD': POSTGRES_PASSWORD,
-        'HOST': f'{POSTGRES_HOST}',
-        'PORT': f'{POSTGRES_PORT}',
-    }
+        # 'ENGINE': 'django_asyncpg.backends.asyncpg',
+        # 'ENGINE': f'{DB_ENGINE}',
+        # 'NAME': f'{POSTGRES_DB}',
+        'ENGINE': "django.db.backends.sqlite3",
+        'NAME': BASE_DIR / 'test_db.sqlite3',
+
+        # 'USER': f'{POSTGRES_USER}',
+        # 'PASSWORD': POSTGRES_PASSWORD,
+        # 'HOST': f'{POSTGRES_HOST}',
+        # 'PORT': f'{POSTGRES_PORT}',
+
+    },
+    # 'test': {
+    #         'ENGINE': "django.db.backends.sqlite3",
+    #         'NAME': BASE_DIR / 'test_db.sqlite3',
+    #
+    #     }
+
 }
 
 
@@ -185,7 +195,7 @@ SESSION_COOKIE_AGE = 86400
 CORS_ORIGIN_ALLOW_ALL = True
 # разрешить только определённые домены
 CORS_ALLOWED_ORIGINS = [
-    "http://83.166.245.209",
+    # "http://83.166.245.209",
     "http://0.0.0.0:8000",
     "http://127.0.0.1:8000",
     "http://localhost:8000",
@@ -194,7 +204,7 @@ CORS_ALLOWED_ORIGINS = [
 # https://github.com/adamchainz/django-cors-headers?tab=readme-ov-file#csrf-integration
 # https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-CSRF_TRUSTED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
-    "http://83.166.245.209",
+    # "http://83.166.245.209",
     "http://0.0.0.0:8000",
     "http://127.0.0.1:8000",
     "http://localhost:8000",
@@ -318,19 +328,19 @@ SIMPLE_JWT = {
 # https://docs.djangoproject.com/en/5.2/topics/cache/
 # 4. Configure Celery to use ....
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://83.166.245.209:6380/0",  # 1 - номер базы Redis
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "SOCKET_CONNECT_TIMEOUT": 5,  # seconds
-            "SOCKET_TIMEOUT": 5,  # seconds
-        },
-        "KEY_PREFIX": "server_",  # префикс для всех ключей
-
-    }
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": "redis://83.166.245.209:6380/0",  # 1 - номер базы Redis
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "SOCKET_CONNECT_TIMEOUT": 5,  # seconds
+#             "SOCKET_TIMEOUT": 5,  # seconds
+#         },
+#         "KEY_PREFIX": "server_",  # префикс для всех ключей
+#
+#     }
+# }
 
 # Необязательно: использовать Redis для хранения сессий
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
@@ -383,6 +393,8 @@ EMAIL_USE_LOCALTIME = True
 
 # """SWAGGER"""
 # https://drf-yasg.readthedocs.io/en/stable/security.html#security-definitions
+
+SWAGGER_USE_COMPAT_RENDERERS = False
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {

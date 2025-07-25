@@ -1,35 +1,20 @@
 import time
 import asyncio
 import re
-from contextlib import nullcontext
 from datetime import datetime
 from collections.abc import Callable
 from typing import (Any, TypedDict,
                     NotRequired,
-                    Generic, List)
-from urllib.request import Request
-
-from colorful.terminal import TRUE_COLORS
+                    List)
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.auth.password_validation import validate_password
-from django.db import connection, transaction
-from django.db.models.expressions import result
-from django.middleware.csrf import get_token
-from asgiref.sync import sync_to_async
-from django.shortcuts import redirect, get_object_or_404
+
+from django.db import connection
+from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse, HttpRequest, HttpResponse
-from django.contrib.auth.hashers import check_password
-from django.views.decorators.csrf import csrf_exempt
-
 from drf_yasg import openapi
-from rest_framework_simplejwt.utils import aware_utcnow
-from twisted.internet.defer import execute
-from twisted.web.http import responses
 
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
-
-# from django.utils.translation import gettext_lazy as _
 from person.access_tokens import AccessToken
 from person.hasher import Hasher
 from person.interfaces import U
@@ -37,12 +22,9 @@ from person.models import Users
 from person.apps import signal_user_registered
 from rest_framework import serializers, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
 from adrf.viewsets import ViewSet
-from rest_framework.decorators import permission_classes
 from person.serializers import (
     UsersSerializer,
-    TokenReqponseLoginSerializer200,
     UsersForSuperuserSerializer,
     Async_UsersSerializer,
 )
@@ -74,11 +56,6 @@ class UserData(TypedDict):
 async def sync_for_async(fn: Callable[[Any], Any], *args, **kwargs):
     return await asyncio.create_task(asyncio.to_thread(fn, *args, **kwargs))
 
-async def serializer_validate(serializer):
-    is_valid = await asyncio.create_task(asyncio.to_thread(serializer.is_valid))
-    # is_valid = await serializer.is_valid()
-    if not is_valid:
-        raise serializers.ValidationError(serializer.errors)
 
 
 def new_connection(data) -> list:
@@ -307,7 +284,6 @@ class UserViews(ViewSet):
                 serializer = await sync_for_async(UsersForSuperuserSerializer, user)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Exception as error:
-                log.info("RETRIEVE, ERROR: %s:" % error.args)
                 return Response(
                     {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
@@ -364,7 +340,7 @@ class UserViews(ViewSet):
                 password = self.get_hash_password(data.get("password"))
                 serializer = Async_UsersSerializer(data=data)
                 # CHECK - VALID DATA
-                await serializer_validate(serializer)
+                await self.serializer_validate(serializer)
                 serializer.validated_data["password"] = password
                 await serializer.asave()
             except Exception as error:
@@ -456,7 +432,6 @@ class UserViews(ViewSet):
         """
         user: U = request.user
         data: UserData = request.data
-        log.info("TEST 1 USER: %s" % user)
         valid_password: None | object = None
         try:
             # Validators
@@ -469,7 +444,6 @@ class UserViews(ViewSet):
         if not user.is_active and valid_username and valid_password:
             valid_username = data.get("username").split()[0]
             valid_password = data.get("password").split()[0]
-            log.info("USER USERNAME: %s" % valid_username)
 
             # Get hash password of user
             hash_password = self.get_hash_password(valid_password)
@@ -480,7 +454,6 @@ class UserViews(ViewSet):
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
                 )
             user_one = users_list[0]
-            log.info("USER OF DB: %s" % user_one)
             if not user_one:
                 return Response(
                     {"data": "User not founded"},
@@ -614,7 +587,7 @@ class UserViews(ViewSet):
             ),
         ],
     )
-    async def logout(self, request: type(HttpRequest), pk=0) -> type(Response):
+    async def logout(self, request: type(HttpRequest), pk=0) -> HttpResponse:
         """
         logout
            "/api/auth/register/<int:pk>/logout"
@@ -630,14 +603,14 @@ class UserViews(ViewSet):
                    ````
                    Redirect to the main page.
         """
-        user = request.user
+        user: U | AnonymousUser = request.user
         if user.is_active:
             try:
                 # GET ACCESS TOKENS
                 accesstoken = AccessToken()
-                user = await accesstoken.get_user_from_token(request)
+                user = (await accesstoken.get_user_from_token(request))[0]
                 user.is_active = False
-                await sync_to_async(user.save)()
+                await user.asave()
                 response = redirect("person_app.register")
                 response.status_code = status.HTTP_200_OK
                 response.delete_cookie("token_access")
@@ -678,3 +651,8 @@ class UserViews(ViewSet):
         except Exception as error:
             raise ValueError(error)
 
+    @staticmethod
+    async def serializer_validate(serializer):
+        is_valid = await asyncio.create_task(asyncio.to_thread(serializer.is_valid))
+        if not is_valid:
+            raise serializers.ValidationError(serializer.errors)

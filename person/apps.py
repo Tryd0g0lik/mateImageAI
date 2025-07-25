@@ -2,6 +2,7 @@ from django.apps import AppConfig
 from django.dispatch import Signal
 
 
+
 class PersonConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "person"
@@ -35,7 +36,7 @@ def user_registered_dispatcher(sender, **kwargs) -> bool:
         res_bool = send_activation_notificcation(kwargs["isinstance"])
         _resp_bool = True
         if not res_bool:
-            raise ValueError(f"Something what wrong. {__text}")
+            raise ValueError(f"Something what wrong.")
 
     except Exception:
         _resp_bool = False

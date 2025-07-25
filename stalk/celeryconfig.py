@@ -10,7 +10,7 @@ accept_content = ["json"]
 timezone = "Asia/Krasnoyarsk"
 enable_utc = True
 
-# celery speed for handle of tasks
+# celery speed for handle of tesks
 # task_annotations = {
 #     'one_tasks.celery_task_money': {'rate_limit': '10/m'}
 # }
