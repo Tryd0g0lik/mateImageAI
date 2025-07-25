@@ -184,7 +184,7 @@ class UserViews(ViewSet):
             ),
         },
     )
-    def list(self, request) -> type(Response):
+    async def list(self, request: HttpRequest) -> HttpResponse:
         """
         Superuser can get the users array of data.
         :param request:
@@ -230,11 +230,11 @@ class UserViews(ViewSet):
             ]
         ```
         """
-        user = request.user
+        user: U | AnonymousUser = request.user
         if user.is_active and user.is_staff:
             try:
-                queryset = Users.objects.all()
-                serializer = UsersForSuperuserSerializer(queryset, many=True)
+                queryset_list = [views async for views in Users.objects.all()]
+                serializer = UsersForSuperuserSerializer(queryset_list, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Exception as error:
                 return Response(
