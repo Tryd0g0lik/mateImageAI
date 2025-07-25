@@ -3,9 +3,7 @@ import asyncio
 import re
 from datetime import datetime
 from collections.abc import Callable
-from typing import (Any, TypedDict,
-                    NotRequired,
-                    List)
+from typing import Any, TypedDict, NotRequired, List
 from django.contrib.auth.models import AnonymousUser
 
 from django.db import connection
@@ -38,10 +36,10 @@ from person.binaries import Binary
 import logging
 from logs import configure_logging
 from dotenv import load_dotenv
-
 load_dotenv()
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
+
 
 class UserData(TypedDict):
     """
@@ -52,10 +50,8 @@ class UserData(TypedDict):
     email: NotRequired[str]
 
 
-
 async def sync_for_async(fn: Callable[[Any], Any], *args, **kwargs):
     return await asyncio.create_task(asyncio.to_thread(fn, *args, **kwargs))
-
 
 
 def new_connection(data) -> list:
@@ -437,9 +433,10 @@ class UserViews(ViewSet):
             # Validators
             valid_username = self.validate_username(data.get("username"))
             valid_password = self.validate_password(data.get("password"))
-        except(AttributeError, TypeError, Exception) as error:
+        except (AttributeError, TypeError, Exception) as error:
             return Response(
-                {"data": ' Data type is not validate: %s' % error.args}, status=status.HTTP_404_NOT_FOUND
+                {"data": " Data type is not validate: %s" % error.args},
+                status=status.HTTP_404_NOT_FOUND
             )
         if not user.is_active and valid_username and valid_password:
             valid_username = data.get("username").split()[0]
@@ -448,7 +445,9 @@ class UserViews(ViewSet):
             # Get hash password of user
             hash_password = self.get_hash_password(valid_password)
             # Check exists of user
-            users_list: List[U] = [view async for view in Users.objects.filter(username=valid_username)]
+            users_list: List[U] = [
+                view async for view in Users.objects.filter(username=valid_username)
+            ]
             if len(users_list) == 0:
                 return Response(
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
@@ -478,7 +477,12 @@ class UserViews(ViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
-            user = await sync_for_async(authenticate,request, username=valid_username, password=valid_password)
+            user = await sync_for_async(
+                authenticate,
+                request,
+                username=valid_username,
+                password=valid_password
+            )
             if user is not None:
                 await sync_for_async(login, request, user)
             else:
@@ -626,7 +630,7 @@ class UserViews(ViewSet):
         return response
 
     @staticmethod
-    def validate_username(value: str) -> None|object:
+    def validate_username(value: str) -> None | object:
         regex = re.compile(r"(^[a-zA-Z]\w{3,50}_{0,2})[^_]")
         return regex.match(value)
 

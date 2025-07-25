@@ -15,6 +15,8 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ["id", "username", "email", "password"]
+
+
 class Async_UsersSerializer(ModelSerializer):
     """
     This Async the basis serialize of 'person/views_api/users_views.py::UserViews'
@@ -57,12 +59,12 @@ class ErrorResponseSerializer(serializers.Serializer):
     """
     For swapper
     """
+
     data = serializers.CharField()
     error = serializers.CharField(required=False, default=None)
     status_code = serializers.IntegerField(
         required=False, default=status.HTTP_401_UNAUTHORIZED
     )
-
 
 
 class TokenSerializer200(serializers.Serializer):

@@ -1,6 +1,6 @@
 import base64
 import pickle
-from typing import (Generic, List)
+from typing import Generic, List
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
@@ -85,9 +85,12 @@ class AccessToken(JWTAuthentication):
         user_id = obj.payload["user_id"]
         user_name = obj.payload["name"]
         try:
-            user_list:List[U] = [view async for view in Users.objects.filter(
-                id=int(user_id), username=user_name
-            )]
+            user_list: List[U] = [
+                view
+                async for view in Users.objects.filter(
+                    id=int(user_id), username=user_name
+                )
+            ]
             if len(user_list) != 0:
                 return user_list
             raise AuthenticationFailed("Invalid token")
