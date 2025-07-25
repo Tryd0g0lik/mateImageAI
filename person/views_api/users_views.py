@@ -1,19 +1,27 @@
 import time
+import asyncio
 from contextlib import nullcontext
 from datetime import datetime
+from collections.abc import Callable
+from urllib.request import Request
 
 from colorful.terminal import TRUE_COLORS
+from django.db import connection, transaction
+from django.db.models.expressions import result
 from django.middleware.csrf import get_token
 from asgiref.sync import sync_to_async
 from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth import authenticate, login
+from django.http import JsonResponse, HttpRequest
+from django.contrib.auth.hashers import check_password
 from django.views.decorators.csrf import csrf_exempt
 
 from drf_yasg import openapi
+from rest_framework_simplejwt.utils import aware_utcnow
+from twisted.internet.defer import execute
 from twisted.web.http import responses
 
-from dotenv_ import SECRET_KEY_DJ
-from django.contrib.auth import authenticate, login
-from django.http import JsonResponse, HttpRequest
+from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 
 # from django.utils.translation import gettext_lazy as _
 from person.access_tokens import AccessToken
@@ -29,6 +37,7 @@ from person.serializers import (
     UsersSerializer,
     TokenReqponseLoginSerializer200,
     UsersForSuperuserSerializer,
+    Async_UsersSerializer,
 )
 from drf_yasg.utils import swagger_auto_schema
 from person.serializers import (
@@ -37,12 +46,36 @@ from person.serializers import (
 )
 from project.settings import SIMPLE_JWT
 from person.binaries import Binary
+import logging
+from logs import configure_logging
+from dotenv import load_dotenv
+
+load_dotenv()
+log = logging.getLogger(__name__)
+configure_logging(logging.INFO)
 
 
-def serializer_validate(serializer):
-    is_valid = serializer.is_valid()
+async def serializer_validate(serializer):
+    is_valid = await asyncio.create_task(asyncio.to_thread(serializer.is_valid))
+    # is_valid = await serializer.is_valid()
     if not is_valid:
         raise serializers.ValidationError(serializer.errors)
+
+
+def new_connection(data) -> list:
+    """
+    new user cheks on the duplicate
+    :param data:
+    :return:
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """SELECT * FROM %s WHERE username == '%s' AND email == '%s';"""
+            % (POSTGRES_DB, data.get("username"), data.get("email"))
+        )
+        resp_list = cursor.fetchall()
+        users_list = [view for view in resp_list]
+    return users_list
 
 
 class UserViews(ViewSet):
@@ -215,7 +248,7 @@ class UserViews(ViewSet):
             500: ErrorResponseSerializer,
         },
     )
-    def retrieve(self, request, pk) -> type(Response):
+    async def retrieve(self, request, pk) -> type(Response):
         """
         :param request:
         :param int pk: User index (it's parameter from the url path) for what retrieve data single user (index which is pk)
@@ -244,17 +277,29 @@ class UserViews(ViewSet):
         ```
         """
         user = request.user
+        log.info("RETRIEVE, USER.ID: %s, PK: %s" % (user.id, pk))
         if pk and user.is_active and (user.is_staff or user.id == int(pk)):
+            log.info("RETRIEVE")
             try:
-                queryset = Users.objects.all()
-                user = get_object_or_404(queryset, pk=int(pk))
+                # queryset = await sync_to_async(Users.objects.all())
+                # log.info("RETRIEVE TYPE: %s" % len(queryset))
+                # queryset = Users.objects.all()
+                # log.info("RETRIEVE, USER TOTAL QUANTITY: %s" % (len(queryset)))
+                user = await sync_to_async(get_object_or_404)(
+                    Users.objects.all(), pk=int(pk)
+                )
+                log.info("RETRIEVE, USER OR 404: %s" % (user))
+                # user = await sync_to_async(get_object_or_404)(queryset, pk=int(pk))
                 if not user:
+                    log.info("RETRIEVE, 'PK' IS INVALID: %s, TYPE" % type(user))
                     Response(
                         {"data": "'pk' is invalid"}, status=status.HTTP_401_UNAUTHORIZED
                     )
-                serializer = UsersForSuperuserSerializer(user)
+                serializer = await sync_to_async(UsersForSuperuserSerializer)(user)
+                log.info("RETRIEVE, 200: %s, SERIALIZER" % type(serializer.data))
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Exception as error:
+                log.info("RETRIEVE, ERROR: %s:" % error.args)
                 return Response(
                     {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
@@ -288,40 +333,64 @@ class UserViews(ViewSet):
         },
         tags=["person"],
     )
-    def create(self, request) -> type(Response):
+    async def create(self, request) -> type(Response):
+        import concurrent.futures
+
         user = request.user
         data = request.data
         response = Response(status=status.HTTP_401_UNAUTHORIZED)
-        # CHECK IF USER EXISTS
-        user_name_list = Users.objects.filter(username=data.get("username"))
-        user_email_list = Users.objects.filter(email=data.get("email"))
-        if not user.is_authenticated and (
-            not user_name_list.exists() or not user_email_list.exists()
-        ):
+
+        try:
+            # sync to async - user's checker on the duplicate
+            users_list: list[Users.objects] = await asyncio.create_task(
+                asyncio.to_thread(new_connection, data=data)
+            )
+
+        except Exception as error:
+            # RESPONSE WILL SEND. CODE 500
+            response.data = {"data": error.args}
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return response
+        # users_list = Users.objects.filter(username=data.get("username"))
+        # users_list = Users.objects.filter(email=data.get("email"))
+        if not user.is_authenticated and len(users_list) == 0:
             try:
                 password = self.get_hash_password(request.data.get("password"))
-                serializer = UsersSerializer(data=data)
-                serializer_validate(serializer)
+                serializer = Async_UsersSerializer(data=data)
+                # CHECK IF USER EXISTSs
+                await serializer_validate(serializer)
                 serializer.validated_data["password"] = password
-                serializer.save()
-                # RESPONSE WILL BE TO SEND. CODE 200
-                response.data = {"data": "OK"}
-                response.status_code = status.HTTP_201_CREATED
-                # SEND MESSAGE TO THE USER's EMAIL
-                user_ = Users.objects.get(pk=serializer.data["id"])
-                signal_user_registered.send(
-                    sender=self.create, data=data, isinstance=user_
-                )
+                await serializer.asave()
             except Exception as error:
-                # RESPONSE WILL BE TO SEND. CODE 401
-                response.data = {"data": error}
+                # RESPONSE WILL BE TO SEND. CODE 500
+                response.data = {"data": error.args}
                 response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            finally:
                 return response
+            # RESPONSE WILL BE TO SEND. CODE 200
+            response.data = {"data": "OK"}
+            user_id_list = [
+                view async for view in Users.objects.filter(pk=serializer.data["id"])
+            ]
+            response.status_code = status.HTTP_201_CREATED
+            # SEND MESSAGE TO THE USER's EMAIL
+            # user_ = Users.objects.get(pk=serializer.data["id"])
+            # await asyncio.create_task(asyncio.to_thread(signal_user_registered.send,
+            #     sender=self.create, data=data, isinstance=1
+            # ))
+            try:
+                send = signal_user_registered.send
+                asyncio.create_task(
+                    asyncio.to_thread(
+                        send, sender=self.create, named=data, isinstance=user_id_list[0]
+                    )
+                )
+            except (AttributeError, Exception) as error:
+                response.data = {"data": error.args}
+                response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return response
 
         response.data = {"data": "User was created before."}
         return response
-        # 201: TokenResponseSerializer,
 
     @swagger_auto_schema(
         operation_description="""
@@ -384,25 +453,46 @@ class UserViews(ViewSet):
                 ````
         """
         user = request.user
+        log.info("TEST 1 USER: %s" % user)
+        if not user.is_active:
 
-        if not user.is_authenticated:
             password = request.data.get("password")
+            log.info("USER PASSWORD: %s" % password)
             login_user = request.data.get("username")
+            # login_user = "Sergey"
+            log.info("USER USERNAME: %s" % login_user)
 
             # HASH PASSWORD OF USER
-            hash_password = self.get_hash_password(request.data.get("password"))
+            hash_password = self.get_hash_password(password)
             # CHECK EXISTS OF USER
-            user_one_list = await sync_to_async(Users.objects.filter)(
-                username=login_user, password=hash_password
+            users_list = await sync_to_async(list)(
+                Users.objects.filter(username=login_user)
             )
-            user_one = await sync_to_async(user_one_list.first)()
 
+            if not users_list:
+                return Response(
+                    {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+            # , password=str(hash_password)
+            log.info("USER OF DB: %s" % (users_list).__dict__)
+            user_one = await sync_to_async(users_list.first)()
+            log.info("USER OF DB: %s" % user_one)
             if not user_one:
                 return Response(
                     {"data": "User not founded"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 
+            # Проверяем пароль правильно
+            is_password_valid = await sync_to_async(check_password)(
+                password, user_one.password
+            )
+            if not is_password_valid:
+                log.error("Invalid password")
+                return Response(
+                    {"error": "Invalid credentials"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
             # GET USER DATA
             user_one.is_active = True
             # SAVE USER
@@ -419,7 +509,6 @@ class UserViews(ViewSet):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             try:
-                ## Вынести в отжельную фунцию
                 user_one.last_login = datetime.now()
                 # SAVE USER
                 await sync_to_async(user_one.save)()
