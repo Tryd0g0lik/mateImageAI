@@ -28,13 +28,15 @@ def user_registered_dispatcher(sender, **kwargs) -> bool:
     :return: bool
     """
     from person.contribute.utilite import send_activation_notificcation
-    text__ = "Function: %s" % user_registered_dispatcher.__name__
+
+    __text = "Function: %s" % user_registered_dispatcher.__name__
     _resp_bool = False
     try:
         res_bool = send_activation_notificcation(kwargs["isinstance"])
         _resp_bool = True
         if not res_bool:
-            raise ValueError(f"Something what wrong.")
+            raise ValueError(f"Something what wrong. {__text}")
+
     except Exception:
         _resp_bool = False
     finally:
