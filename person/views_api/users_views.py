@@ -471,11 +471,11 @@ class UserViews(ViewSet):
                 ````
         """
         user: Generic[T] = request.user
-
         data: UserData = request.data
         log.info("TEST 1 USER: %s" % user)
         valid_password: None | object = None
         try:
+            # Validators
             valid_username = self.validate_username(data.get("username"))
             valid_password = self.validate_password(data.get("password"))
         except(AttributeError, TypeError, Exception) as error:
@@ -483,8 +483,8 @@ class UserViews(ViewSet):
                 {"data": ' Data type is not validate: %s' % error.args}, status=status.HTTP_404_NOT_FOUND
             )
         if not user.is_active and valid_username and valid_password:
-            valid_username = data.get("username").split()
-            valid_password = data.get("password").split()
+            valid_username = data.get("username").split()[0]
+            valid_password = data.get("password").split()[0]
             log.info("USER USERNAME: %s" % valid_username)
 
             # Get hash password of user
@@ -670,7 +670,7 @@ class UserViews(ViewSet):
 
     @staticmethod
     def validate_username(value: str) -> None|object:
-        regex = re.compile(r"(^[a-zA-Z]\w+_{0,2})[^_]")
+        regex = re.compile(r"(^[a-zA-Z]\w{3,50}_{0,2})[^_]")
         return regex.match(value)
 
     @staticmethod
