@@ -45,8 +45,6 @@ class AccessToken(JWTAuthentication):
             'TokenObtainPairSerializer' it has own db/
             :return:
         """
-        """TIME TO THE LIVE TOKEN"""
-        # dt = datetime.datetime.now() + datetime.timedelta(days=1)
         """GET TOKEN"""
         try:
             token = TokenObtainPairSerializer.get_token(user_object)
@@ -59,16 +57,10 @@ class AccessToken(JWTAuthentication):
         """
         This method is used for getting the user object from the token.
         """
-
         bytes_token: bytes = None
-
         """GET TOKENS FROM THE HEADERS"""
-        # origin_token_access = request.COOKIES.get("token_access")
         origin_token_access = request.META.get("HTTP_ACCESSTOKEN").split(" ")[1]
-        # origin_token_refresh = request.COOKIES.get("token_refresh")
-        # origin_token_refresh = request.COOKIES.get("token_refresh")
-
-        if not origin_token_access:  # and not origin_token_refresh:
+        if not origin_token_access:
             raise ValueError("Invalid token")
 
         if origin_token_access:
@@ -76,8 +68,6 @@ class AccessToken(JWTAuthentication):
                 bytes_token = self.string_to_byte_tokens(origin_token_access)
             except Exception as error:
                 raise AuthenticationFailed(error)
-        # elif not origin_token_refresh:
-        #     bytes_token = self.string_to_byte_tokens(origin_token_refresh)
         if not bytes_token:
             raise ValueError("Invalid token")
         # """GET USER ID AND USER NAME"""

@@ -14,7 +14,6 @@ class Hasher(PBKDF2PasswordHasher):
     https://docs.djangoproject.com/en/5.2/topics/auth/passwords/
     """
 
-    def hashing(selfself, password, salt_, iterations=None):
+    def hashing(selfself, password: str, salt_:str, iterations=None):
         hasher_password = make_password(password, salt=salt_)
-        # mask_password_chash = mask_hash(hashed_password)
         return hasher_password
