@@ -6,10 +6,11 @@ from datetime import datetime
 from collections.abc import Callable
 from typing import (Any, TypedDict,
                     NotRequired,
-                    Generic)
+                    Generic, List)
 from urllib.request import Request
 
 from colorful.terminal import TRUE_COLORS
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
 from django.db import connection, transaction
 from django.db.models.expressions import result
@@ -31,7 +32,7 @@ from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 # from django.utils.translation import gettext_lazy as _
 from person.access_tokens import AccessToken
 from person.hasher import Hasher
-from person.interfaces import T
+from person.interfaces import U
 from person.models import Users
 from person.apps import signal_user_registered
 from rest_framework import serializers, status
@@ -266,7 +267,7 @@ class UserViews(ViewSet):
             500: ErrorResponseSerializer,
         },
     )
-    async def retrieve(self, request: HttpRequest, pk: str) -> type(Response):
+    async def retrieve(self, request: HttpRequest, pk: str) -> HttpResponse:
         """
         :param request:
         :param int pk: User index (it's parameter from the url path) for what retrieve data single user (index which is pk)
@@ -294,33 +295,16 @@ class UserViews(ViewSet):
             ]
         ```
         """
-        user: Users.objects = request.user
-        log.info("RETRIEVE, USER.ID: %s, PK: %s" % (user.id, int(pk)))
+        user: U | AnonymousUser = request.user
         if pk and user.is_active and (user.is_staff or user.id == int(pk)):
-            log.info("RETRIEVE")
             try:
-                # queryset = await sync_to_async(Users.objects.all())
-                queryset_list = [view async for view in  Users.objects.all()]
-
-                log.info("RETRIEVE TYPE: %s" % len(queryset_list))
-
-                # log.info("RETRIEVE, USER TOTAL QUANTITY: %s" % (len(queryset)))
-                # user = await sync_to_async(get_object_or_404)(
-                #     Users.objects.all(), pk=int(pk)
-                # )
-                users_list = [view async for view in Users.objects.all()]
-                # user_list = [view async for view in get_object_or_404(self.__class__, users_list[0], pk=int(pk))]
-                await sync_for_async(get_object_or_404,users_list[0], klass=self.__class__, pk=int(pk))
-
-                log.info("RETRIEVE, USER OR 404: %s" % (user))
-                # user = await sync_to_async(get_object_or_404)(queryset, pk=int(pk))
-                if not user:
-                    log.info("RETRIEVE, 'PK' IS INVALID: %s, TYPE" % type(user))
+                users_list = [view async for view in Users.objects.filter(pk=int(pk))]
+                if len(users_list) == 0:
                     Response(
                         {"data": "'pk' is invalid"}, status=status.HTTP_401_UNAUTHORIZED
                     )
-                serializer = await sync_to_async(UsersForSuperuserSerializer)(user)
-                log.info("RETRIEVE, 200: %s, SERIALIZER" % type(serializer.data))
+                    # Get - data
+                serializer = await sync_for_async(UsersForSuperuserSerializer, user)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Exception as error:
                 log.info("RETRIEVE, ERROR: %s:" % error.args)
@@ -470,7 +454,7 @@ class UserViews(ViewSet):
                 ]}
                 ````
         """
-        user: Generic[T] = request.user
+        user: U = request.user
         data: UserData = request.data
         log.info("TEST 1 USER: %s" % user)
         valid_password: None | object = None
@@ -490,7 +474,7 @@ class UserViews(ViewSet):
             # Get hash password of user
             hash_password = self.get_hash_password(valid_password)
             # Check exists of user
-            users_list: list[Generic[T]] = [view async for view in Users.objects.filter(username=valid_username)]
+            users_list: List[U] = [view async for view in Users.objects.filter(username=valid_username)]
             if len(users_list) == 0:
                 return Response(
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
