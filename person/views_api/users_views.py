@@ -1,18 +1,23 @@
 import time
 import asyncio
+import re
 from contextlib import nullcontext
 from datetime import datetime
 from collections.abc import Callable
+from typing import (Any, TypedDict,
+                    NotRequired,
+                    Generic)
 from urllib.request import Request
 
 from colorful.terminal import TRUE_COLORS
+from django.contrib.auth.password_validation import validate_password
 from django.db import connection, transaction
 from django.db.models.expressions import result
 from django.middleware.csrf import get_token
 from asgiref.sync import sync_to_async
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
-from django.http import JsonResponse, HttpRequest
+from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.contrib.auth.hashers import check_password
 from django.views.decorators.csrf import csrf_exempt
 
@@ -26,6 +31,7 @@ from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 # from django.utils.translation import gettext_lazy as _
 from person.access_tokens import AccessToken
 from person.hasher import Hasher
+from person.interfaces import T
 from person.models import Users
 from person.apps import signal_user_registered
 from rest_framework import serializers, status
@@ -54,6 +60,18 @@ load_dotenv()
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
 
+class UserData(TypedDict):
+    """
+    Type for register, login, etc.
+    """
+    username: str
+    password: str
+    email: NotRequired[str]
+
+
+
+async def sync_for_async(fn: Callable[[Any], Any], *args, **kwargs):
+    return await asyncio.create_task(asyncio.to_thread(fn, *args, **kwargs))
 
 async def serializer_validate(serializer):
     is_valid = await asyncio.create_task(asyncio.to_thread(serializer.is_valid))
@@ -248,7 +266,7 @@ class UserViews(ViewSet):
             500: ErrorResponseSerializer,
         },
     )
-    async def retrieve(self, request, pk) -> type(Response):
+    async def retrieve(self, request: HttpRequest, pk: str) -> type(Response):
         """
         :param request:
         :param int pk: User index (it's parameter from the url path) for what retrieve data single user (index which is pk)
@@ -276,18 +294,24 @@ class UserViews(ViewSet):
             ]
         ```
         """
-        user = request.user
-        log.info("RETRIEVE, USER.ID: %s, PK: %s" % (user.id, pk))
+        user: Users.objects = request.user
+        log.info("RETRIEVE, USER.ID: %s, PK: %s" % (user.id, int(pk)))
         if pk and user.is_active and (user.is_staff or user.id == int(pk)):
             log.info("RETRIEVE")
             try:
                 # queryset = await sync_to_async(Users.objects.all())
-                # log.info("RETRIEVE TYPE: %s" % len(queryset))
-                # queryset = Users.objects.all()
+                queryset_list = [view async for view in  Users.objects.all()]
+
+                log.info("RETRIEVE TYPE: %s" % len(queryset_list))
+
                 # log.info("RETRIEVE, USER TOTAL QUANTITY: %s" % (len(queryset)))
-                user = await sync_to_async(get_object_or_404)(
-                    Users.objects.all(), pk=int(pk)
-                )
+                # user = await sync_to_async(get_object_or_404)(
+                #     Users.objects.all(), pk=int(pk)
+                # )
+                users_list = [view async for view in Users.objects.all()]
+                # user_list = [view async for view in get_object_or_404(self.__class__, users_list[0], pk=int(pk))]
+                await sync_for_async(get_object_or_404,users_list[0], klass=self.__class__, pk=int(pk))
+
                 log.info("RETRIEVE, USER OR 404: %s" % (user))
                 # user = await sync_to_async(get_object_or_404)(queryset, pk=int(pk))
                 if not user:
@@ -333,9 +357,7 @@ class UserViews(ViewSet):
         },
         tags=["person"],
     )
-    async def create(self, request) -> type(Response):
-        import concurrent.futures
-
+    async def create(self, request: HttpRequest) -> type(Response):
         user = request.user
         data = request.data
         response = Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -355,9 +377,9 @@ class UserViews(ViewSet):
         # users_list = Users.objects.filter(email=data.get("email"))
         if not user.is_authenticated and len(users_list) == 0:
             try:
-                password = self.get_hash_password(request.data.get("password"))
+                password = self.get_hash_password(data.get("password"))
                 serializer = Async_UsersSerializer(data=data)
-                # CHECK IF USER EXISTSs
+                # CHECK - VALID DATA
                 await serializer_validate(serializer)
                 serializer.validated_data["password"] = password
                 await serializer.asave()
@@ -372,12 +394,8 @@ class UserViews(ViewSet):
                 view async for view in Users.objects.filter(pk=serializer.data["id"])
             ]
             response.status_code = status.HTTP_201_CREATED
-            # SEND MESSAGE TO THE USER's EMAIL
-            # user_ = Users.objects.get(pk=serializer.data["id"])
-            # await asyncio.create_task(asyncio.to_thread(signal_user_registered.send,
-            #     sender=self.create, data=data, isinstance=1
-            # ))
             try:
+                # SEND MESSAGE TO THE USER's EMAIL
                 send = signal_user_registered.send
                 asyncio.create_task(
                     asyncio.to_thread(
@@ -430,7 +448,7 @@ class UserViews(ViewSet):
             )
         ],
     )
-    async def login(self, request, pk=0) -> type(Response):
+    async def login(self, request: HttpRequest, pk=0) -> HttpResponse:
         """
         "/api/auth/register/0/login"
         This method is used the user's login and IP ADDRESS of client.
@@ -452,57 +470,60 @@ class UserViews(ViewSet):
                 ]}
                 ````
         """
-        user = request.user
+        user: Generic[T] = request.user
+
+        data: UserData = request.data
         log.info("TEST 1 USER: %s" % user)
-        if not user.is_active:
-
-            password = request.data.get("password")
-            log.info("USER PASSWORD: %s" % password)
-            login_user = request.data.get("username")
-            # login_user = "Sergey"
-            log.info("USER USERNAME: %s" % login_user)
-
-            # HASH PASSWORD OF USER
-            hash_password = self.get_hash_password(password)
-            # CHECK EXISTS OF USER
-            users_list = await sync_to_async(list)(
-                Users.objects.filter(username=login_user)
+        valid_password: None | object = None
+        try:
+            valid_username = self.validate_username(data.get("username"))
+            valid_password = self.validate_password(data.get("password"))
+        except(AttributeError, TypeError, Exception) as error:
+            return Response(
+                {"data": ' Data type is not validate: %s' % error.args}, status=status.HTTP_404_NOT_FOUND
             )
+        if not user.is_active and valid_username and valid_password:
+            valid_username = data.get("username").split()
+            valid_password = data.get("password").split()
+            log.info("USER USERNAME: %s" % valid_username)
 
-            if not users_list:
+            # Get hash password of user
+            hash_password = self.get_hash_password(valid_password)
+            # Check exists of user
+            users_list: list[Generic[T]] = [view async for view in Users.objects.filter(username=valid_username)]
+            if len(users_list) == 0:
                 return Response(
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
                 )
-            # , password=str(hash_password)
-            log.info("USER OF DB: %s" % (users_list).__dict__)
-            user_one = await sync_to_async(users_list.first)()
+            user_one = users_list[0]
             log.info("USER OF DB: %s" % user_one)
             if not user_one:
                 return Response(
                     {"data": "User not founded"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
-
-            # Проверяем пароль правильно
-            is_password_valid = await sync_to_async(check_password)(
-                password, user_one.password
-            )
-            if not is_password_valid:
+            # check a password
+            if not user_one.password == hash_password:
                 log.error("Invalid password")
                 return Response(
                     {"error": "Invalid credentials"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
-            # GET USER DATA
+            # Get user's data
+            user_one.date_joined = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%u")
             user_one.is_active = True
-            # SAVE USER
-            await sync_to_async(user_one.save)()
+            # Save user 1/2
+            try:
+                await user_one.asave()
+            except (TypeError, Exception) as error:
+                return Response(
+                    {"error": error.args[0]},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
-            user = await sync_to_async(authenticate)(
-                request, username=login_user, password=password
-            )
+            user = await sync_for_async(authenticate,request, username=valid_username, password=valid_password)
             if user is not None:
-                await sync_to_async(login)(request, user)
+                await sync_for_async(login, request, user)
             else:
                 return Response(
                     {"data": "User not founded"},
@@ -510,8 +531,14 @@ class UserViews(ViewSet):
                 )
             try:
                 user_one.last_login = datetime.now()
-                # SAVE USER
-                await sync_to_async(user_one.save)()
+                # Save user 2/2
+                try:
+                    await user_one.asave()
+                except (TypeError, Exception) as error:
+                    return Response(
+                        {"error": error.args[0]},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
                 # GET ACCESS TOKENS
                 accesstoken = AccessToken(user)
                 tokens = await accesstoken.async_token()
@@ -642,6 +669,16 @@ class UserViews(ViewSet):
         return response
 
     @staticmethod
+    def validate_username(value: str) -> None|object:
+        regex = re.compile(r"(^[a-zA-Z]\w+_{0,2})[^_]")
+        return regex.match(value)
+
+    @staticmethod
+    def validate_password(value: str) -> None | object:
+        regex = re.compile(r"([\w%]{9,255})")
+        return regex.match(value)
+
+    @staticmethod
     def get_hash_password(password: str) -> str:
         """
         This method for hashing user password.
@@ -656,3 +693,4 @@ class UserViews(ViewSet):
             return hash_password
         except Exception as error:
             raise ValueError(error)
+
