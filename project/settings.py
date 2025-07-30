@@ -14,7 +14,8 @@ from pathlib import Path
 from datetime import timedelta, datetime
 from dotenv_ import (DB_ENGINE, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_USER,
                      SECRET_KEY_DJ, SMTP_USER, SMTP_PASS,
-                     SMTP_HOST, SMTP_PORT)
+                     SMTP_HOST, SMTP_PORT,
+                     REDIS_LOCATION_URL, DATABASE_FOR_TEST, DATABASE_ENGINE_FOR_TEST, DATABASE_ENGINE_FOR_DEFAULT)
 import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_yasg',
     'adrf',
+   # 'django_celery_results',
     "webpack_loader",
     'django.contrib.admin',
     'django.contrib.auth',
@@ -56,7 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'person',
-    'metaimage',
+    # 'metaimage',
 ]
 
 MIDDLEWARE = [
@@ -99,27 +101,67 @@ ASGI_APPLICATION = "project.asgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        # 'ENGINE': 'django_asyncpg.backends.asyncpg',
-        # 'ENGINE': f'{DB_ENGINE}',
-        # 'NAME': f'{POSTGRES_DB}',
-        'ENGINE': "django.db.backends.sqlite3",
-        'NAME': BASE_DIR / 'test_db.sqlite3',
 
-        # 'USER': f'{POSTGRES_USER}',
-        # 'PASSWORD': POSTGRES_PASSWORD,
-        # 'HOST': f'{POSTGRES_HOST}',
-        # 'PORT': f'{POSTGRES_PORT}',
+    "default":  {
+        # POSTGRES
+        'ENGINE': f'{DB_ENGINE}',
+        'NAME': f'{POSTGRES_DB}',
+        'USER': f'{POSTGRES_USER}',
+        'PASSWORD': POSTGRES_PASSWORD,
+        'HOST': f'{POSTGRES_HOST}',
+        'PORT': f'{POSTGRES_PORT}',
 
     },
-    # 'test': {
-    #         'ENGINE': "django.db.backends.sqlite3",
-    #         'NAME': BASE_DIR / 'test_db.sqlite3',
+    # "assistant": {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
+    #     "OPTIONS": {
+    #         "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #         "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
+    #         "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
+    #     },
+    #     "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
     #
-    #     }
+    # },
+    # 'test': {
+    #     # SQLITE
+    #     'ENGINE': f'{DATABASE_ENGINE_FOR_TEST}',
+    #     'NAME': BASE_DIR / f'{DATABASE_FOR_TEST}',
+    #
+    # }
 
 }
 
+#"""REDIS"""
+"""REDIS & CELERY IN DJANGO"""
+# https://redis.io/
+# https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
+# https://docs.djangoproject.com/en/5.2/topics/cache/
+# 4. Configure Celery to use ....
+#
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
+            "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
+        },
+        "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
+
+    },
+}
+# CELERY_BROKER_URL=os.environ.get("redis://83.166.245.209:6380")
+# CELERY_RESULT_BACKEND=os.environ.get("redis://83.166.245.209:6380/0")
+# Celery Configuration Options
+
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+# CELERY_RESULT_BACKEND="django-db"  # Для хранения результатов в PostgreSQL
+# Необязательно: использовать Redis для хранения сессий
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -321,30 +363,7 @@ SIMPLE_JWT = {
 }
 
 
-#"""REDIS"""
-"""REDIS & CELERY IN DJANGO"""
-# https://redis.io/
-# https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
-# https://docs.djangoproject.com/en/5.2/topics/cache/
-# 4. Configure Celery to use ....
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": "redis://83.166.245.209:6380/0",  # 1 - номер базы Redis
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "SOCKET_CONNECT_TIMEOUT": 5,  # seconds
-#             "SOCKET_TIMEOUT": 5,  # seconds
-#         },
-#         "KEY_PREFIX": "server_",  # префикс для всех ключей
-#
-#     }
-# }
-
-# Необязательно: использовать Redis для хранения сессий
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
 
 """DEBUG TOOLBAR daphne"""
 

@@ -16,7 +16,16 @@ APP_PROTOCOL = os.getenv("APP_PROTOCOL", "")
 APP_HOST = os.getenv("APP_HOST", "")
 APP_PORT = os.getenv("APP_PORT", "")
 # База данных
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+DATABASE_FOR_TEST = os.getenv("DATABASE_FOR_TEST", "")
+DATABASE_ENGINE_FOR_TEST = os.getenv("DATABASE_ENGINE_FOR_TEST", "")
+DATABASE_ENGINE_FOR_DEFAULT = os.getenv("DATABASE_ENGINE_FOR_DEFAULT", "")
+# Redis
+REDIS_LOCATION_URL = os.getenv("REDIS_LOCATION_URL", "")
+DB_TO_RADIS_CACHE_USERS = os.getenv("DB_TO_RADIS_CACHE_USERS", "")
+DB_TO_RADIS_PORT = os.getenv("DB_TO_RADIS_PORT", "")
+DB_TO_RADIS_HOST = os.getenv("DB_TO_RADIS_HOST", "")
+# CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "")
 
 # Email сервис (опционально)
 SMTP_HOST = os.getenv("SMTP_HOST", "")

@@ -31,6 +31,7 @@ channels = {extras = ["daphne"], version = "^4.2.2"}
 django-redis = "^6.0.0"
 celery = {version = "^5.5.3", extras = ["redis"]}
 bcrypt = "^4.3.0"
+redis-cli = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit-hooks = "5.0.0"

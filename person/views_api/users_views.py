@@ -1,12 +1,17 @@
+import json
 import time
 import asyncio
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections.abc import Callable
 from typing import Any, TypedDict, NotRequired, List
+
+from asgiref.sync import sync_to_async
+from celery.worker.control import time_limit
 from django.contrib.auth.models import AnonymousUser
 
-from django.db import connection
+from django.db import connections
+from django.db.models.expressions import result
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse, HttpRequest, HttpResponse
@@ -15,7 +20,7 @@ from drf_yasg import openapi
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 from person.access_tokens import AccessToken
 from person.hasher import Hasher
-from person.interfaces import U
+from person.interfaces import U, UserData
 from person.models import Users
 from person.apps import signal_user_registered
 from rest_framework import serializers, status
@@ -31,23 +36,19 @@ from person.serializers import (
     UserResponseSerializer200,
     ErrorResponseSerializer,
 )
+from person.tasks.cache_hew_user import task_postman_for_user_id
+
+from project.celery import debug_task
 from project.settings import SIMPLE_JWT
 from person.binaries import Binary
 import logging
 from logs import configure_logging
 from dotenv import load_dotenv
+
+
 load_dotenv()
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
-
-
-class UserData(TypedDict):
-    """
-    Type for register, login, etc.
-    """
-    username: str
-    password: str
-    email: NotRequired[str]
 
 
 async def sync_for_async(fn: Callable[[Any], Any], *args, **kwargs):
@@ -60,11 +61,12 @@ def new_connection(data) -> list:
     :param data:
     :return:
     """
-    with connection.cursor() as cursor:
+    with connections["default"].cursor() as cursor:
         cursor.execute(
-            """SELECT * FROM %s WHERE username == '%s' AND email == '%s';"""
-            % (POSTGRES_DB, data.get("username"), data.get("email"))
+            """SELECT * FROM person_users WHERE username = '%s' AND email = '%s';"""
+            % (data.get("username"), data.get("email"))
         )
+        # POSTGRES_DB
         resp_list = cursor.fetchall()
         users_list = [view for view in resp_list]
     return users_list
@@ -329,16 +331,19 @@ class UserViews(ViewSet):
             response.data = {"data": error.args}
             response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return response
-        # users_list = Users.objects.filter(username=data.get("username"))
-        # users_list = Users.objects.filter(email=data.get("email"))
+        # Condition - If the length of the users_list has more zero, it's mean what user has a duplicate.
+        # Response will be return 401.
         if not user.is_authenticated and len(users_list) == 0:
             try:
-                password = self.get_hash_password(data.get("password"))
+                password_hes = self.get_hash_password(data.get("password"))
                 serializer = Async_UsersSerializer(data=data)
                 # CHECK - VALID DATA
                 await self.serializer_validate(serializer)
-                serializer.validated_data["password"] = password
+                serializer.validated_data["password"] = password_hes
                 await serializer.asave()
+                data: dict = dict(serializer.data).copy()
+                # Send id to the redis from celer's task
+                task_postman_for_user_id.delay((data["id"],))
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 500
                 response.data = {"data": error.args}
@@ -346,9 +351,15 @@ class UserViews(ViewSet):
                 return response
             # RESPONSE WILL BE TO SEND. CODE 200
             response.data = {"data": "OK"}
-            user_id_list = [
-                view async for view in Users.objects.filter(pk=serializer.data["id"])
-            ]
+            try:
+                if serializer.data["id"]:
+                    user_id_list = [
+                        view async for view in Users.objects.filter(pk=data["id"])
+                    ]
+            except Exception as error:
+                return Response(
+                    {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             response.status_code = status.HTTP_201_CREATED
             try:
                 # SEND MESSAGE TO THE USER's EMAIL
@@ -436,7 +447,7 @@ class UserViews(ViewSet):
         except (AttributeError, TypeError, Exception) as error:
             return Response(
                 {"data": " Data type is not validate: %s" % error.args},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
         if not user.is_active and valid_username and valid_password:
             valid_username = data.get("username").split()[0]
@@ -478,10 +489,7 @@ class UserViews(ViewSet):
                 )
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
             user = await sync_for_async(
-                authenticate,
-                request,
-                username=valid_username,
-                password=valid_password
+                authenticate, request, username=valid_username, password=valid_password
             )
             if user is not None:
                 await sync_for_async(login, request, user)
