@@ -3,13 +3,13 @@ import json
 import logging
 from datetime import datetime
 from json import JSONDecodeError
-from typing import List, Tuple
 
 from redis.asyncio.client import Redis
 from redis.exceptions import ConnectionError, BusyLoadingError
 from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 from celery import shared_task
+
 from logs import configure_logging
 from person.interfaces import TypeUser
 from person.redis_person import RedisOfPerson
@@ -52,9 +52,10 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
     try:
         # Redis client with retries on custom errors
         retry = Retry(ExponentialBackoff(), 3)
-        client = RedisOfPerson(retry)
+        client = RedisOfPerson(retry) if not client else client
     except (ConnectionError, Exception) as error:
-        raise ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0)))
+        log.error(ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0))))
+        return {}
     # Check tha ping for cache's db
 
     try:

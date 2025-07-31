@@ -1,10 +1,10 @@
 import json
 import logging
 import os
-
+from typing import Union
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from colorful.terminal import TRUE_COLORS
+
 from redis import Redis, TimeoutError
 
 from dotenv_ import DB_TO_RADIS_CACHE_USERS, DB_TO_RADIS_PORT, DB_TO_RADIS_HOST
@@ -28,7 +28,7 @@ logger = get_task_logger(__name__)
     autoretry_for=(TimeoutError,),
     retry_backoff=False,
 )
-def task_postman_for_user_id(self, user_id_list: list[int]) -> TypeUser:
+def task_postman_for_user_id(self, user_id_list: list[int]) -> Union[TypeUser, dict]:
     """
     retry_backoff - https://docs.celeryq.dev/en/stable/userguide/tasks.html#Task.autoretry_for
     ignore_result - If False, it means we don't have a response. Or conversely if we have a True.
@@ -40,11 +40,12 @@ def task_postman_for_user_id(self, user_id_list: list[int]) -> TypeUser:
     :return:
     """
     if len(user_id_list) == 0:
-        raise ValueError("[%s]: No users found" % __name__)
+        log.error(ValueError("[%s]: No users found" % __name__))
+        return {}
     return person_to_redis(user_id_list)
 
 
-def person_to_redis(user_id_list: list[int]) -> TypeUser:
+def person_to_redis(user_id_list: list[int]) -> Union[TypeUser, dict]:
     """
     Here, we will be caching of new user after registration/ From entrypoint,we get an id.
     After that, we find the user by id and send it to the cache.
@@ -61,15 +62,19 @@ def person_to_redis(user_id_list: list[int]) -> TypeUser:
 
     try:
         if not client.ping():
-            raise ConnectionError("Redis connection failed")
+            log.error(ConnectionError("Redis connection failed"))
+            return {}
         log.info("Client is ping")
         # Basis db
         person_list = Users.objects.filter(id=user_id_list.__getitem__(0))
         if not person_list.exists():
-            raise ValueError(
-                "[%s]: No users found in Users's db. Length from 'person_list' is %s "
-                % (__name__, str(len(person_list)))
+            log.error(
+                ValueError(
+                    "[%s]: No users found in Users's db. Length from 'person_list' is %s "
+                    % (__name__, str(len(person_list)))
+                )
             )
+            return {}
         user_serializer = CacheUsersSerializer(person_list.__getitem__(0))
         user_dict: TypeUser = user_serializer.data.copy()
         log.info("Received user ID: %s" % user_dict.__getitem__("id"))
@@ -90,4 +95,7 @@ def person_to_redis(user_id_list: list[int]) -> TypeUser:
         return user_dict
     except Exception as error:
         log.error("[%s]: ERROR => %s" % (__name__, error.args.__getitem__(0)))
-        raise ValueError("[%s]: ERROR => %s" % (__name__, error.args.__getitem__(0)))
+        log.info(
+            ValueError("[%s]: ERROR => %s" % (__name__, error.args.__getitem__(0)))
+        )
+        return {}

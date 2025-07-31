@@ -33,7 +33,8 @@ def task_user_from_cache(self) -> bool:
             db=DB_TO_RADIS_CACHE_USERS,
         )
     except Exception as error:
-        raise ValueError("%s: Error => %s" % (__name__, error.args[0]))
+        log.error(ValueError("%s: Error => %s" % (__name__, error.args[0])))
+        return False
 
     return person_upgrade_data_of_user(client)
 
@@ -61,7 +62,7 @@ def person_upgrade_data_of_user(client: type(Redis.client)) -> bool:
         status = True
     except Exception as error:
         log.error("%s: ERROR => %s" % (__name__, error.args[0]))
-        raise ValueError
+        return False
     finally:
         if client:
             client.close()

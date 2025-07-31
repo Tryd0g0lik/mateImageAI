@@ -1,7 +1,7 @@
 import json
 import logging
 import ssl
-from typing import Dict, Union, Optional, Mapping, Coroutine, Any
+from typing import Dict, Union, Optional, Mapping, Any
 from redis.asyncio.client import Redis
 from redis.backoff import ExponentialBackoff
 from redis.credentials import CredentialProvider
@@ -70,7 +70,7 @@ class RedisOfPerson(Redis):
 
     async def async_set_cache_user(
         self, key: str, **kwargs: Dict[str, Union[str, int]]
-    ) -> Coroutine[bool]:
+    ) -> bool:
         """
         Redis's cache
         Now will be saving on the 27 hours.
