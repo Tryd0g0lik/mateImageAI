@@ -139,19 +139,19 @@ DATABASES = {
 # https://docs.djangoproject.com/en/5.2/topics/cache/
 # 4. Configure Celery to use ....
 #
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
-            "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
-        },
-        "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
-
-    },
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
+#             "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
+#         },
+#         "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
+#
+#     },
+# }
 # CELERY_BROKER_URL=os.environ.get("redis://83.166.245.209:6380")
 # CELERY_RESULT_BACKEND=os.environ.get("redis://83.166.245.209:6380/0")
 # Celery Configuration Options

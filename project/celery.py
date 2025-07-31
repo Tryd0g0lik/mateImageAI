@@ -13,8 +13,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 app = Celery(
     "proj",
     include=[
-        "stalk.tasks_generations.first_task",
-        "stalk.tasks_generations.task_next",
+        "person.tasks.task_user_is_authenticate",
+        "person.tasks.task_cache_hew_user",
+        "person.tasks.task_user_from_cache_to_td_repeat",
     ],
 )
 
@@ -26,6 +27,8 @@ app = Celery(
 app.config_from_object(celeryconfig)
 # Load task modules from all registered Django apps.
 # app.autodiscover_tasks()
+
+# https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html#introduction
 app.conf.beat_schedule = {
     "midnigth-tast": {
         "task": "person.tasks.task_user_from_cache_to_td_repeat.task_user_from_cache",

@@ -2,13 +2,9 @@ import json
 import logging
 import os
 
-from datetime import datetime
-from typing import TypedDict
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from django.dispatch import Signal
-from django.template.defaultfilters import length
-from kombu.utils.json import dumps
+from colorful.terminal import TRUE_COLORS
 from redis import Redis, TimeoutError
 
 from dotenv_ import DB_TO_RADIS_CACHE_USERS, DB_TO_RADIS_PORT, DB_TO_RADIS_HOST
@@ -27,7 +23,7 @@ logger = get_task_logger(__name__)
 
 @shared_task(
     name=__name__,
-    bind=False,
+    bind=True,
     ignore_result=True,
     autoretry_for=(TimeoutError,),
     retry_backoff=False,

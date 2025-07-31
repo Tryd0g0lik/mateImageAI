@@ -36,9 +36,8 @@ from person.serializers import (
     UserResponseSerializer200,
     ErrorResponseSerializer,
 )
-from person.tasks.cache_hew_user import task_postman_for_user_id
+from person.tasks.task_cache_hew_user import task_postman_for_user_id
 
-from project.celery import debug_task
 from project.settings import SIMPLE_JWT
 from person.binaries import Binary
 import logging

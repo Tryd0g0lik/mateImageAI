@@ -13,7 +13,7 @@ the function (below).
 """
 
 from datetime import datetime, timezone
-
+import asyncio
 from django.contrib.auth import authenticate, login
 from django.core.cache import cache
 from django.core.signing import BadSignature
@@ -27,6 +27,7 @@ from dotenv_ import (
     URL_REDIRECT_IF_GET_AUTHENTICATION,
     URL_REDIRECT_IF_NOTGET_AUTHENTICATION,
 )
+from person.tasks.task_user_is_authenticate import task_user_authenticate
 from project.settings import SESSION_COOKIE_AGE
 
 
@@ -97,7 +98,7 @@ code 301.\
         We are checking user.
         Below, we will be change the active status of user.
         """
-        user = get_object_or_404(Users, username=username)
+        user: Users | None = get_object_or_404(Users, username=username)
         try:
             _text = "%s Get 'user': %s", (_text, user.__dict__.__str__())
             # logging, it if return error
@@ -106,7 +107,7 @@ code 301.\
         # get the text from the basis value
         _text = (str(_text).split(":"))[0] + ":"
         # CHECK OF ACTIVATED
-        if user.is_active:
+        if not user or user.is_active:
             _text = (
                 " %s the object 'user' has 'True' value \
 from 'is_activated'. Redirect. 301",
@@ -121,21 +122,22 @@ from 'is_activated'. Redirect. 301",
             "Mistake: %s ",
             _text,
         )
-        # get the text from the basis value
-        _text = (str(_text).split(":"))[0] + ":"
-        user.is_active = True
-        user.is_activated = True
-        user.is_verified = True
-        user.date_joined = datetime.now()
-        user.last_login = datetime.now()
-        user.save()
-        # GET AUTHENTICATION
-        user = authenticate(request, username=user.username, password=user.password)
-        if user is not None:
+
+        task_user_authenticate.apply_async(
+            kwargs={"user_id": user.__getattribute__("id")}
+        )
+
+        # user_authenticate = authenticate(request, username=user.username, password=user.password)
+        # if user_authenticate is not None:
+        if user.__setattr__("id", True):
             login(request, user)
         # CREATE SIGNER
         user_session = create_signer(user)
-        cache.set(f"user_session_{user.id}", user_session, SESSION_COOKIE_AGE)
+        cache.set(
+            f"user_session_{user.__getattribute__("id")}",
+            user_session,
+            SESSION_COOKIE_AGE,
+        )
         """ New object has the `user_session_{id}` variable"""
         redirect_url = f"{request.scheme}://{request.get_host()}{URL_REDIRECT_IF_GET_AUTHENTICATION}"
         response = HttpResponseRedirect(redirect_url)
