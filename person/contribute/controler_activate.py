@@ -79,7 +79,6 @@ code 301.\
         a string of email(or username).
         """
         username += signer.unsign(sign)
-        # log.info("%s Get '_first_name': %s ", (_text, username))
     except BadSignature as e:
         _text = " %s Mistake => 'BadSignature': %s", (_text, e)
         # https://docs.djangoproject.com/en/5.1/ref/request-response

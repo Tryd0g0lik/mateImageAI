@@ -64,23 +64,30 @@ def person_to_redis(user_id_list: list[int]) -> TypeUser:
             raise ConnectionError("Redis connection failed")
         log.info("Client is ping")
         # Basis db
-        person_list = Users.objects.filter(id=user_id_list[0])
+        person_list = Users.objects.filter(id=user_id_list.__getitem__(0))
         if not person_list.exists():
             raise ValueError(
                 "[%s]: No users found in Users's db. Length from 'person_list' is %s "
                 % (__name__, str(len(person_list)))
             )
-        user_serializer = CacheUsersSerializer(person_list[0])
+        user_serializer = CacheUsersSerializer(person_list.__getitem__(0))
         user_dict: TypeUser = user_serializer.data.copy()
-        log.info("Received user ID: %s" % user_dict["id"])
+        log.info("Received user ID: %s" % user_dict.__getitem__("id"))
         # Redis's cache
         # Now will be saving on the 27 hours.
         # 'task_user_from_cache' task wil be to upgrade postgres at ~ am 01:00
         # Timetable look the 'project.celery.app.base.Celery.conf'
-        client.set(f"user:{str(user_dict["id"])}:person", json.dumps(user_dict), 97200)
+        client.set(
+            f"user:{str(user_dict.__getitem__("id"))}:person",
+            json.dumps(user_dict),
+            97200,
+        )
         client.close()
-        log.info("User with %s ID was saved in Redis. The End" % str(user_dict["id"]))
+        log.info(
+            "User with %s ID was saved in Redis. The End"
+            % str(user_dict.__getitem__("id"))
+        )
         return user_dict
     except Exception as error:
-        log.error("[%s]: ERROR => %s" % (__name__, error.args[0]))
-        raise ValueError("[%s]: ERROR => %s" % (__name__, error.args[0]))
+        log.error("[%s]: ERROR => %s" % (__name__, error.args.__getitem__(0)))
+        raise ValueError("[%s]: ERROR => %s" % (__name__, error.args.__getitem__(0)))

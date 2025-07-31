@@ -47,17 +47,14 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
         # Redis client with retries on custom errors
         retry = Retry(ExponentialBackoff(), 3)
         client = RedisOfPerson(retry)
-        log.info("START REDIS: %s" % __name__)
     except (ConnectionError, Exception) as error:
-        raise ValueError("%s: ERROR => %s" % (__name__, error.args[0]))
+        raise ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0)))
     # Check tha ping for cache's db
     if not await client.ping():
         raise ConnectionError("Redis connection failed")
-    log.info("REDIS IS PING: %s" % __name__)
     try:
         # Check a key into the db for the cached user
         res_bool = await client.async_has_key(key)
-        log.info("CLIENT HASE a KEY: %s" % __name__)
         # User was not found in cache/ It means the registration was unsuccessful.
         # On the stage be avery one user is saved in cache
         if not res_bool:
@@ -67,9 +64,7 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
         return {}
 
     try:
-        log.info("BEFORE GET USER FROM CACHE")
         user_json = await client.async_get_cache_user(key)
-        log.info("GOT USER FROM CACHE: %s" % user_json)
         if not user_json:
             log.info(
                 ValueError("%s: ERROR => User not was founded in cache" % (__name__))
