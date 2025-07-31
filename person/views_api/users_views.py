@@ -4,7 +4,7 @@ import asyncio
 import re
 from datetime import datetime, timedelta
 from collections.abc import Callable
-from typing import Any, TypedDict, NotRequired, List
+from typing import Any, TypedDict, NotRequired, List, Dict
 
 from django.contrib.auth.models import AnonymousUser
 from django.db import connections
@@ -16,12 +16,14 @@ from drf_yasg import openapi
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 from person.access_tokens import AccessToken
 from person.hasher import Hasher
-from person.interfaces import U, UserData
+from person.interfaces import U, UserData, TypeUser
 from person.models import Users
 from person.apps import signal_user_registered
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from adrf.viewsets import ViewSet
+
+from person.redis_person import RedisOfPerson
 from person.serializers import (
     UsersSerializer,
     UsersForSuperuserSerializer,
@@ -66,6 +68,16 @@ def new_connection(data) -> list:
         resp_list = cursor.fetchall()
         users_list = [view for view in resp_list]
     return users_list
+
+
+async def iterator_get_person_cache(client: type(RedisOfPerson)):
+    """
+    Get all collections of keys from person's cache.
+    :return:
+    """
+    keys = await client.keys("user:*")
+    for key in keys:
+        yield key
 
 
 class UserViews(ViewSet):
@@ -462,43 +474,56 @@ class UserViews(ViewSet):
 
             # Get hash password of user
             hash_password = self.get_hash_password(valid_password)
-            # Check exists of user
-            users_list: List[U] = [
-                view async for view in Users.objects.filter(username=valid_username)
-            ]
+            # Check exists of user to the both db
+            client = RedisOfPerson()
+            users_list: List[dict] = []
+            # 1/2 db
+            async for key_one in iterator_get_person_cache(client):
+                caches_user = await client.get(key_one)
+                # Check the username
+                if (
+                    caches_user
+                    and isinstance(caches_user, dict)
+                    and caches_user.__getitem__("username") == valid_username
+                ):
+                    users_list.append(caches_user)
+                    continue
+            await client.close()
+
+            if len(users_list) == 0:
+                # 2 /2 db
+                users_list: List[U] = [
+                    view async for view in Users.objects.filter(username=valid_username)
+                ]
             if len(users_list) == 0:
                 return Response(
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
                 )
-            user_one = users_list[0]
-            if not user_one:
-                return Response(
-                    {"data": "User not founded"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+
+            user_one = users_list.__getitem__(0)
+            response = Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            # Check password of user
+            if type(users_list) == List[U]:
+                if not (user_one.__getattribute__("password") == hash_password):
+                    log.error("Invalid password")
+                    return response
             # check a password
-            if not user_one.password == hash_password:
+            if not (user_one.__getitem__("password") == hash_password):
                 log.error("Invalid password")
-                return Response(
-                    {"error": "Invalid credentials"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+                return response
             # RUN THE TASK - Update CACHE's USER
             task_user_login.apply_async(
                 kwargs={"user_id": user_one.__getattribute__("id")}
             )
-
-            try:
-                await user_one.asave()
-            except (TypeError, Exception) as error:
-                return Response(
-                    {"error": error.args[0]},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
+            # user activation
             user = await sync_for_async(
                 authenticate, request, username=valid_username, password=valid_password
             )
+
             if user is not None:
                 await sync_for_async(login, request, user)
             else:
@@ -507,15 +532,7 @@ class UserViews(ViewSet):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             try:
-                user_one.last_login = datetime.now()
-                # Save user 2/2
-                try:
-                    await user_one.asave()
-                except (TypeError, Exception) as error:
-                    return Response(
-                        {"error": error.args[0]},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    )
+
                 # GET ACCESS TOKENS
                 accesstoken = AccessToken(user)
                 tokens = await accesstoken.async_token()
