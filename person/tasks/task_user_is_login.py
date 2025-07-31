@@ -1,21 +1,16 @@
 import asyncio
-import json
 import logging
 from datetime import datetime
 from json import JSONDecodeError
-from typing import List, Tuple
-
 from redis.asyncio.client import Redis
-from redis.exceptions import ConnectionError, BusyLoadingError
 from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 from celery import shared_task
+
 from logs import configure_logging
 from person.interfaces import TypeUser
 from person.redis_person import RedisOfPerson
-
-
-from dotenv_ import DB_TO_RADIS_CACHE_USERS, DB_TO_RADIS_PORT, DB_TO_RADIS_HOST
+from person.tasks.task_user_is_authenticate import async_task_user_authenticate
 
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
@@ -25,27 +20,27 @@ configure_logging(logging.INFO)
     name=__name__,
     bind=True,
     ignore_result=True,
-    autoretry_for=(TimeoutError,),
+    autoretry_for=(
+        Exception,
+        TimeoutError,
+    ),
     retry_backoff=False,
 )
-def task_user_authenticate(self, user_id: int) -> dict | bool:
+def task_user_login(self, user_id: int) -> dict | bool:
     log.info("START CACHE: %s" % __name__)
-
     """ "
-    Here, we get a dict from non-relational(Redis 1) DB and updating the properties (then saved to the Redis 1).
-    If all 'OK' we return True or empty dict (when wea have an Error), to the outside.
-    """
+        Here, we get a dict from non-relational(Redis 1) DB and updating the properties (then saved to the Redis 1).
+        If all 'OK' we return True or empty dict (when wea have an Error), to the outside.
+        """
     try:
-        asyncio.get_event_loop().run_until_complete(
-            async_task_user_authenticate(user_id)
-        )
+        asyncio.get_event_loop().run_until_complete(async_task_user_login(user_id))
     except (ConnectionError, Exception) as error:
         log.error(ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0))))
         return {}
     return True
 
 
-async def async_task_user_authenticate(user_id: int) -> dict | bool:
+async def async_task_user_login(user_id: int) -> dict | bool:
     client: type(Redis.client) = None
     key = f"user:{user_id}:person"
     user_json: TypeUser | None = None
@@ -54,12 +49,15 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
         retry = Retry(ExponentialBackoff(), 3)
         client = RedisOfPerson(retry)
     except (ConnectionError, Exception) as error:
-        raise ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0)))
-    # Check tha ping for cache's db
+        log.error(ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0))))
+        return {}
 
     try:
-        user_json = await client.async_basis_collection(user_id) is TypeUser
-        if not user_json or not isinstance(user_json, dict):
+        # Check a key into the db for the cached user
+        user_json += await client.async_basis_collection(user_id) is TypeUser
+        # User was not found in cache/ It means the registration was unsuccessful.
+        # On the stage be avery one user is saved in cache
+        if not user_json or isinstance(user_json, dict):
             log.error(
                 ValueError(f"%s: Expected dict, got {type(user_json)}" % (__name__))
             )
@@ -69,20 +67,13 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
         return {}
 
     try:
-        # UPDATE DATE FROM NON-RELATION DB
-        if user_json.get("login", False):
+        # LOGIN
+        if user_json.get("is_active", False):
             user_json.__setitem__("is_active", True)
-        if user_json.get("is_activated", False):
-            user_json.__setitem__("is_activated", True)
-        if user_json.get("is_verified", False):
-            user_json.__setitem__("is_verified", True)
-        user_json.__setitem__(
-            "date_joined", datetime.now().strftime("%Y-%m-%d %H:%M:%S.%u")
-        )
         user_json.__setitem__(
             "last_login", datetime.now().strftime("%Y-%m-%d %H:%M:%S.%u")
         )
-
+        # SAVING
         await client.async_set_cache_user(key, **user_json)
         return True
     except (JSONDecodeError, Exception) as error:

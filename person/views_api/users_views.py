@@ -33,6 +33,7 @@ from person.serializers import (
     ErrorResponseSerializer,
 )
 from person.tasks.task_cache_hew_user import task_postman_for_user_id
+from person.tasks.task_user_is_login import task_user_login
 
 from project.settings import SIMPLE_JWT
 from person.binaries import Binary
@@ -345,7 +346,7 @@ class UserViews(ViewSet):
                 serializer.validated_data["password"] = password_hes
                 await serializer.asave()
                 data: dict = dict(serializer.data).copy()
-                # Send id to the redis from celer's task
+                # # RUN THE TASK - Update CACHE's USER -send id to the redis from celer's task
                 task_postman_for_user_id.delay((data.__getitem__("id"),))
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 500
@@ -482,10 +483,11 @@ class UserViews(ViewSet):
                     {"error": "Invalid credentials"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
-            # Get user's data
-            user_one.date_joined = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%u")
-            user_one.is_active = True
-            # Save user 1/2
+            # RUN THE TASK - Update CACHE's USER
+            task_user_login.apply_async(
+                kwargs={"user_id": user_one.__getattribute__("id")}
+            )
+
             try:
                 await user_one.asave()
             except (TypeError, Exception) as error:

@@ -336,11 +336,6 @@ URL_REDIRECT_IF_NOTGET_AUTHENTICATION = < url_for_redirect_if_no_exists_athentic
 URL_REDIRECT_IF_GET_AUTHENTICATION = < url_for_redirect_if_exists_athenticate >
 ```
 
-## DB 
-- DOCKER на "`HTTP`" "`83.166.245.209`"\
-- База данных postgres, работает через порт 5433\
-- "`DATABASE_URL=redis://83.166.245.209:6380/0`"\
-
 ## Прочее
 После изменений статических файлов \ 
 команда "`py manage.py collectstatic --clear --noinput`"\
@@ -389,3 +384,19 @@ Referral link содержит криптографическую подпись
 
 ### redoc format
 ![email_post](./img/redoc.png)
+
+
+## DB
+База данных выстраивается по схеме:
+- реляционная db есть основная (в данный момент "`PostgreSQL`");
+- нереляционная для кеша ("`Redis`", "`DB_TO_RADIS_CACHE_USERS`").
+
+
+- DOCKER на "`HTTP`" "`83.166.245.209`"\
+- База данных postgres, работает через порт 5433\
+- "`DATABASE_URL=redis://83.166.245.209:6380/0`"\
+
+Как  только пользователь отправиль данные, через форму регистрации, данные:
+1) сохраняются в реляционной базе данных;
+2) получив "`id`", данные кешируются в нереляционной db;
+3) после, с данными из модели "`Users`" работаем через нереляционную db. Данные сохраняются примерно на 27 часов. В "`01:00`" реляционная db обновляется "`project/celery.py`".
