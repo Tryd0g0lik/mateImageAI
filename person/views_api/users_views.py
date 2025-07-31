@@ -6,12 +6,8 @@ from datetime import datetime, timedelta
 from collections.abc import Callable
 from typing import Any, TypedDict, NotRequired, List
 
-from asgiref.sync import sync_to_async
-from celery.worker.control import time_limit
 from django.contrib.auth.models import AnonymousUser
-
 from django.db import connections
-from django.db.models.expressions import result
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse, HttpRequest, HttpResponse
@@ -270,7 +266,14 @@ class UserViews(ViewSet):
         ```
         """
         user: U | AnonymousUser = request.user
-        if pk and user.is_active and (user.is_staff or user.id == int(pk)):
+        if (
+            pk
+            and user.__getattribute__("is_active")
+            and (
+                user.__getattribute__("is_staff")
+                or user.__getattribute__("id") == int(pk)
+            )
+        ):
             try:
                 users_list = [view async for view in Users.objects.filter(pk=int(pk))]
                 if len(users_list) == 0:
@@ -282,7 +285,8 @@ class UserViews(ViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Exception as error:
                 return Response(
-                    {"data": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"data": error.args.__getitem__(0)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
         return Response(
             {"data": "User or 'pk' is invalid"}, status=status.HTTP_401_UNAUTHORIZED
@@ -342,7 +346,7 @@ class UserViews(ViewSet):
                 await serializer.asave()
                 data: dict = dict(serializer.data).copy()
                 # Send id to the redis from celer's task
-                task_postman_for_user_id.delay((data["id"],))
+                task_postman_for_user_id.delay((data.__getitem__("id"),))
             except Exception as error:
                 # RESPONSE WILL BE TO SEND. CODE 500
                 response.data = {"data": error.args}
@@ -351,7 +355,7 @@ class UserViews(ViewSet):
             # RESPONSE WILL BE TO SEND. CODE 200
             response.data = {"data": "OK"}
             try:
-                if serializer.data["id"]:
+                if serializer.data.__getitem__("id"):
                     user_id_list = [
                         view async for view in Users.objects.filter(pk=data["id"])
                     ]
@@ -365,11 +369,14 @@ class UserViews(ViewSet):
                 send = signal_user_registered.send
                 asyncio.create_task(
                     asyncio.to_thread(
-                        send, sender=self.create, named=data, isinstance=user_id_list[0]
+                        send,
+                        sender=self.create,
+                        named=data,
+                        isinstance=user_id_list.__getitem__(0),
                     )
                 )
             except (AttributeError, Exception) as error:
-                response.data = {"data": error.args}
+                response.data = {"data": error.args.__getitem__(0)}
                 response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return response
 
@@ -449,8 +456,8 @@ class UserViews(ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         if not user.is_active and valid_username and valid_password:
-            valid_username = data.get("username").split()[0]
-            valid_password = data.get("password").split()[0]
+            valid_username = data.get("username").split().__getitem__(0)
+            valid_password = data.get("password").split().__getitem__(0)
 
             # Get hash password of user
             hash_password = self.get_hash_password(valid_password)
@@ -512,9 +519,9 @@ class UserViews(ViewSet):
                 tokens = await accesstoken.async_token()
                 # ИЗМЕНИТЬ ВРЕМЯ
                 current_time = datetime.now()
-                access_time = (SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]).seconds
+                access_time = (SIMPLE_JWT.__getitem__("ACCESS_TOKEN_LIFETIME")).seconds
                 refresh_time = (
-                    SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] + current_time
+                    SIMPLE_JWT.__getitem__("REFRESH_TOKEN_LIFETIME") + current_time
                 ).timestamp() - time.time()
 
             except Exception as ex:
@@ -545,7 +552,8 @@ class UserViews(ViewSet):
                 )
             except Exception as ex:
                 return Response(
-                    {"data": ex.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"data": ex.args.__getitem__(0)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         return Response(
@@ -619,7 +627,7 @@ class UserViews(ViewSet):
             try:
                 # GET ACCESS TOKENS
                 accesstoken = AccessToken()
-                user = (await accesstoken.get_user_from_token(request))[0]
+                user = (await accesstoken.get_user_from_token(request)).__getitem__(0)
                 user.is_active = False
                 await user.asave()
                 response = redirect("person_app.register")
