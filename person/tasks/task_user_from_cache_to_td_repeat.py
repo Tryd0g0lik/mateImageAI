@@ -24,16 +24,20 @@ def task_user_from_cache(self) -> bool:
     :param self:
     :return: True it means what all OK, or not.
     """
-    log.info("START TO UPGRADE DB.")
+    log.info("%s: START TO UPGRADE DB." % task_user_from_cache.__name__)
     client: type(Redis.client) = None
     try:
-        client += Redis(
+        client = Redis(
             host=f"{DB_TO_RADIS_HOST}",
             port=f"{DB_TO_RADIS_PORT}",
             db=DB_TO_RADIS_CACHE_USERS,
         )
     except Exception as error:
-        log.error(ValueError("%s: Error => %s" % (__name__, error.args[0])))
+        log.error(
+            ValueError(
+                "%s: Error => %s" % (task_user_from_cache.__name__, error.args[0])
+            )
+        )
         return False
 
     return person_upgrade_data_of_user(client)
@@ -46,9 +50,12 @@ def person_upgrade_data_of_user(client: type(Redis.client)) -> bool:
     :param Redis.client client: Client from Redis for commands/
     :return: True it means what all OK, or not.
     """
+
     status = False
     if not client.ping():
-        raise ConnectionError("Redis connection failed")
+        raise ConnectionError(
+            "%s: Redis connection failed" % person_upgrade_data_of_user.__name__
+        )
     log.info("CLient is ping")
     keys_list = [item.decode() for item in client.keys("user:*")]
     try:
@@ -58,13 +65,21 @@ def person_upgrade_data_of_user(client: type(Redis.client)) -> bool:
             user_json = json.loads((client.get(k_name)).decode("utf-8"))
             # Basis db
             CacheUsersSerializer(data=user_json).save()
-            log.info("ID №: %s was upgraded" % k_name)
+            log.info(
+                "%s: ID №: %s was upgraded"
+                % (person_upgrade_data_of_user.__name__, k_name)
+            )
         status = True
     except Exception as error:
-        log.error("%s: ERROR => %s" % (__name__, error.args[0]))
+        log.error(
+            "%s: ERROR => %s" % (person_upgrade_data_of_user.__name__, error.args[0])
+        )
         return False
     finally:
         if client:
             client.close()
-        log.info("END TO UPGRADE DB. STATUS: %s" % str(status))
+        log.info(
+            "%s: END TO UPGRADE DB. STATUS: %s"
+            % (person_upgrade_data_of_user.__name__, str(status))
+        )
     return status

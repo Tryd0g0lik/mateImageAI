@@ -11,6 +11,7 @@ from django.db import connections
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse, HttpRequest, HttpResponse
+from django.template.base import kwarg_re
 from drf_yasg import openapi
 
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
@@ -36,6 +37,9 @@ from person.serializers import (
 )
 from person.tasks.task_cache_hew_user import task_postman_for_user_id
 from person.tasks.task_user_is_login import task_user_login
+
+
+from person.tasks.task_user_is_logout import task_user_logout
 
 from project.settings import SIMPLE_JWT
 from person.binaries import Binary
@@ -479,7 +483,8 @@ class UserViews(ViewSet):
             users_list: List[dict] = []
             # 1/2 db
             async for key_one in iterator_get_person_cache(client):
-                caches_user = await client.get(key_one)
+                b_caches_user = await client.get(key_one)
+                caches_user = json.loads(b_caches_user.decode())
                 # Check the username
                 if (
                     caches_user
@@ -495,6 +500,10 @@ class UserViews(ViewSet):
                 users_list: List[U] = [
                     view async for view in Users.objects.filter(username=valid_username)
                 ]
+                # RUN THE TASK - Update CACHE's USER
+                task_user_login.apply_async(
+                    kwargs={"user_id": users_list.__getitem__(0).__getattribute__("id")}
+                )
             if len(users_list) == 0:
                 return Response(
                     {"data": "User not found"}, status=status.HTTP_404_NOT_FOUND
@@ -510,14 +519,14 @@ class UserViews(ViewSet):
                 if not (user_one.__getattribute__("password") == hash_password):
                     log.error("Invalid password")
                     return response
+                task_user_login.apply_async(
+                    kwargs={"user_id": user_one.__getattribute__("id")}
+                )
             # check a password
             if not (user_one.__getitem__("password") == hash_password):
                 log.error("Invalid password")
                 return response
-            # RUN THE TASK - Update CACHE's USER
-            task_user_login.apply_async(
-                kwargs={"user_id": user_one.__getattribute__("id")}
-            )
+
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
             # user activation
             user = await sync_for_async(
@@ -644,15 +653,42 @@ class UserViews(ViewSet):
         user: U | AnonymousUser = request.user
         if user.is_active:
             try:
-                # GET ACCESS TOKENS
-                accesstoken = AccessToken()
-                user = (await accesstoken.get_user_from_token(request)).__getitem__(0)
-                user.is_active = False
-                await user.asave()
                 response = redirect("person_app.register")
                 response.status_code = status.HTTP_200_OK
                 response.delete_cookie("token_access")
                 response.delete_cookie("token_refresh")
+                # GET ACCESS TOKENS
+                accesstoken = AccessToken()
+                # Check exists of user to the both db
+                client = RedisOfPerson()
+                users_list: List[dict] = []
+                # 1/2 db - get all collection from the person's keys (Redis 1)
+                async for key_one in iterator_get_person_cache(client):
+                    b_caches_user = await client.get(key_one)
+                    caches_user = json.loads(b_caches_user.decode("utf-8"))
+                    # Check the username
+                    if (
+                        caches_user
+                        and isinstance(caches_user, dict)
+                        and caches_user.__getitem__("id") == user.id
+                    ):
+                        users_list.append(caches_user)
+                        continue
+                await client.close()
+
+                if len(users_list) == 0:
+                    # 2/2 db -  If we can't found to the person's cache (Redis 1)
+                    user = (await accesstoken.get_user_from_token(request)).__getitem__(
+                        0
+                    )
+                else:
+                    # If we found to the person's cache (Redis 1)
+                    task_user_logout.apply_async(kwargs={"user_id": user.id})
+                    return response
+
+                user.is_active = False
+                await user.asave()
+
                 return response
             except Exception:
                 return Response(
@@ -665,7 +701,7 @@ class UserViews(ViewSet):
 
     @staticmethod
     def validate_username(value: str) -> None | object:
-        regex = re.compile(r"(^[a-zA-Z]\w{3,50}_{0,2})[^_]")
+        regex = re.compile(r"(^[a-zA-Z]\w{3,50}_{0,2})")
         return regex.match(value)
 
     @staticmethod

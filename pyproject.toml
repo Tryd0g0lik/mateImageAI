@@ -49,6 +49,7 @@ django-rest-framework-async = "^0.1.0"
 drf-spectacular = "^0.28.0"
 drf-yasg = "^1.21.10"
 model-bakery = "^1.20.5"
+black = "^25.1.0"
 
 
 

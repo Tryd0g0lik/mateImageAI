@@ -43,17 +43,33 @@ class RedisOfPerson(Redis):
         """
 
         log.info(
-            "%s: BEFORE GET KEYS: KEY %s" % (RedisOfPerson.__class__.__name__, one_key)
+            "%s: BEFORE GET KEYS: KEY %s"
+            % (RedisOfPerson.__class__.__name__ + self.async_has_key.__name__, one_key)
         )
         k_list_encode = await self.keys()
+        if len(k_list_encode) == 0:
+            log.info(
+                "%s: KEYS was not found: %s"
+                % (
+                    RedisOfPerson.__class__.__name__ + self.async_has_key.__name__,
+                    one_key,
+                )
+            )
+            return False
         log.info(
-            "%s: GOT b_KEYS: KEY LIST %s"
-            % (RedisOfPerson.__class__.__name__, k_list_encode.__str__())
+            "%s: GOT b_KEYS: length KEY's LIST %s"
+            % (
+                RedisOfPerson.__class__.__name__ + self.async_has_key.__name__,
+                len(k_list_encode),
+            )
         )
         k_list = [s.decode() for s in k_list_encode]
         log.info(
             "%s: GOT KEYS: %s"
-            % (RedisOfPerson.__class__.__name__, True if one_key in k_list else False)
+            % (
+                RedisOfPerson.__class__.__name__ + self.async_has_key.__name__,
+                True if one_key in k_list else False,
+            )
         )
         return True if one_key in k_list else False
 
@@ -64,9 +80,9 @@ class RedisOfPerson(Redis):
         For person's cache is number '1'.
         :return: dict/json | False.
         """
-        result = await self.async_has_key(key)
+        # result = await self.async_has_key(key)
         get_ = await self.get(key)
-        return json.loads(get_) if result else False
+        return json.loads(get_.decode())
 
     async def async_set_cache_user(
         self, key: str, **kwargs: Dict[str, Union[str, int]]
@@ -83,7 +99,17 @@ class RedisOfPerson(Redis):
             await self.set(key, json.dumps(kwargs), 97200)
             return True
         except Exception as error:
-            raise ValueError("%s: ERROR => %s" % (__name__, error.args[0]))
+            log.info(
+                ValueError(
+                    "%s: ERROR => %s"
+                    % (
+                        RedisOfPerson.__class__.__name__
+                        + self.async_set_cache_user.__name__,
+                        error.args[0],
+                    )
+                )
+            )
+            return False
 
     async def async_basis_collection(self, user_id: int) -> dict[str, Any]:
         """
@@ -99,32 +125,76 @@ class RedisOfPerson(Redis):
         try:
             # Check a key into the db for the cached user
             res_bool = await self.async_has_key(key)
+
             # User was not found in cache/ It means the registration was unsuccessful.
             # On the stage be avery one user is saved in cache
             if not res_bool:
-                raise ValueError("%s: ERROR => User not was founded" % (__name__))
-        except Exception as error:
-            log.error(ValueError("%s: ERROR => %s" % (__name__, error)))
-            return {}
+                raise (
+                    ValueError(
+                        "%s: ERROR => User not was founded"
+                        % (
+                            RedisOfPerson.__class__.__name__
+                            + self.async_basis_collection.__name__,
+                        )
+                    )
+                )
 
+        except Exception as error:
+            log.error(error)
+            return {}
+        log.info(
+            "%s: GOT MESSAGE: %s"
+            % (
+                RedisOfPerson.__class__.__name__ + self.async_basis_collection.__name__,
+                "Passed the check ",
+            )
+        )
         try:
             user_json = await self.async_get_cache_user(key)
             if not user_json:
                 log.info(
                     ValueError(
-                        "%s: ERROR => User not was founded in cache" % (__name__)
+                        "%s: ERROR => User not was founded in cache: %s"
+                        % (
+                            RedisOfPerson.__class__.__name__
+                            + self.async_basis_collection.__name__,
+                            user_json,
+                        )
                     )
                 )
                 return {}
-
-            user_json = dict(user_json)
+            log.info(
+                "%s: GOT 'user_json'. It's TYPE: %s"
+                % (
+                    RedisOfPerson.__class__.__name__
+                    + self.async_basis_collection.__name__,
+                    isinstance(user_json, dict),
+                )
+            )
             if not isinstance(user_json, dict):
                 log.error(
-                    ValueError(f"%s: Expected dict, got {type(user_json)}" % (__name__))
+                    ValueError(
+                        f"%s: Expected dict, got {type(user_json)}"
+                        % (
+                            RedisOfPerson.__class__.__name__
+                            + self.async_basis_collection.__name__
+                        )
+                    )
                 )
+            else:
                 return user_json
+            return {}
         except Exception as error:
-            log.error(ValueError("%s: ERROR => %s" % (__name__, error)))
+            log.error(
+                ValueError(
+                    "%s: ERROR => %s"
+                    % (
+                        RedisOfPerson.__class__.__name__
+                        + self.async_basis_collection.__name__,
+                        error,
+                    )
+                )
+            )
             return {}
 
 
