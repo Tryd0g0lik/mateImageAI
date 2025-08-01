@@ -6,6 +6,21 @@
 
 - "`swagger_for_postman.yml`" пример swagger.
 
+## Basis STACK
+||||
+|:----|:----|:----|
+|async "`Django`"|async "`DRF`"|"`JWT`" от "`DRF`"|
+|"`Celery`"|"`Radis`"|"`PostgreSQL`"|
+|"`daphne`"|"`Signal`"|"`pytest`"|
+||||
+ 
+Процессы: 
+ - регистрация, ауторизация,
+ - аутентификация через почту,
+ - выход из профиля, кеширование пароля,
+ - PostgreSQL основна, Redis для кеширования даныннх. В 01:00ам бновление данных в PostgreSQL.  
+
+
 ## Tree
 ```text
 mateImageAI/
