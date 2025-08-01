@@ -46,20 +46,26 @@ def task_user_authenticate(self, user_id: int) -> dict | bool:
 
 
 async def async_task_user_authenticate(user_id: int) -> dict | bool:
+    """
+    When is all OK, function returns the answer of Bool type. It's True. When we have Error or
+     not all is OK then we have an empty dictionary.
+    :param int user_id: Index of user.
+    :return:
+    """
     client: type(Redis.client) = None
     key = f"user:{user_id}:person"
     user_json: TypeUser | None = None
     try:
         # Redis client with retries on custom errors
-        retry = Retry(ExponentialBackoff(), 3)
-        client = RedisOfPerson(retry) if not client else client
+        client = RedisOfPerson() if not client else client
     except (ConnectionError, Exception) as error:
         log.error(ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0))))
         return {}
     # Check tha ping for cache's db
 
     try:
-        user_json = await client.async_basis_collection(user_id) is TypeUser
+        user_json = await client.async_basis_collection(user_id)
+        log.info(f"%s: Expected dict, got {user_json}" % (__name__))
         if not user_json or not isinstance(user_json, dict):
             log.error(
                 ValueError(f"%s: Expected dict, got {type(user_json)}" % (__name__))
@@ -90,4 +96,4 @@ async def async_task_user_authenticate(user_id: int) -> dict | bool:
         log.error(ValueError("%s: ERROR => %s" % (__name__, error)))
         return {}
     finally:
-        await client.close()
+        await client.aclose()
