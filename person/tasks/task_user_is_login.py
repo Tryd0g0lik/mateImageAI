@@ -46,24 +46,37 @@ async def async_task_user_login(user_id: int) -> dict | bool:
     user_json: TypeUser | None = None
     try:
         # Redis client with retries on custom errors
-        retry = Retry(ExponentialBackoff(), 3)
-        client = RedisOfPerson(retry)
+        client = RedisOfPerson()
     except (ConnectionError, Exception) as error:
-        log.error(ValueError("%s: ERROR => %s" % (__name__, error.args.__getitem__(0))))
+        log.error(
+            ValueError(
+                "%s: ERROR => %s"
+                % (async_task_user_login.__name__, error.args.__getitem__(0))
+            )
+        )
         return {}
 
     try:
         # Check a key into the db for the cached user
-        user_json += await client.async_basis_collection(user_id) is TypeUser
+        user_json = await client.async_basis_collection(user_id)
         # User was not found in cache/ It means the registration was unsuccessful.
         # On the stage be avery one user is saved in cache
-        if not user_json or isinstance(user_json, dict):
+        log.info(
+            f"%s: Expected dict, Yes or Not: {user_json}"
+            % (async_task_user_login.__name__)
+        )
+        if len(user_json.keys()) == 0:
             log.error(
-                ValueError(f"%s: Expected dict, got {type(user_json)}" % (__name__))
+                ValueError(
+                    f"%s: Expected dict, got {type(user_json)}"
+                    % (async_task_user_login.__name__)
+                )
             )
             return {}
     except Exception as error:
-        log.error(ValueError("%s: ERROR => %s" % (__name__, error)))
+        log.error(
+            ValueError("%s: ERROR => %s" % (async_task_user_login.__name__, error))
+        )
         return {}
 
     try:
@@ -77,7 +90,9 @@ async def async_task_user_login(user_id: int) -> dict | bool:
         await client.async_set_cache_user(key, **user_json)
         return True
     except (JSONDecodeError, Exception) as error:
-        log.error(ValueError("%s: ERROR => %s" % (__name__, error)))
+        log.error(
+            ValueError("%s: ERROR => %s" % (async_task_user_login.__name__, error))
+        )
         return {}
     finally:
-        await client.close()
+        await client.aclose()

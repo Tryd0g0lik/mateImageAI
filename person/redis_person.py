@@ -164,7 +164,7 @@ class RedisOfPerson(Redis):
                 )
                 return {}
             log.info(
-                "%s: GOT 'user_json'. It's TYPE: %s"
+                "%s: GOT 'user_json'. It's BOOL: %s"
                 % (
                     RedisOfPerson.__class__.__name__
                     + self.async_basis_collection.__name__,
@@ -182,6 +182,14 @@ class RedisOfPerson(Redis):
                     )
                 )
             else:
+                log.info(
+                    "%s: GOT 'user_json' #%s"
+                    % (
+                        RedisOfPerson.__class__.__name__
+                        + self.async_basis_collection.__name__,
+                        user_id,
+                    )
+                )
                 return user_json
             return {}
         except Exception as error:
