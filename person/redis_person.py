@@ -1,19 +1,11 @@
 import json
 import logging
-import ssl
-from typing import Dict, Union, Optional, Mapping, Any
+from typing import Dict, Union, Any
 from redis.asyncio.client import Redis
-from redis.backoff import ExponentialBackoff
-from redis.credentials import CredentialProvider
-from redis.asyncio.retry import Retry
 from redis.exceptions import ConnectionError
-from redis.utils import get_lib_version
 
 from dotenv_ import DB_TO_RADIS_HOST
 from logs import configure_logging
-from redis.asyncio.connection import (
-    ConnectionPool,
-)
 
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
@@ -89,6 +81,9 @@ class RedisOfPerson(Redis):
     ) -> bool:
         """
         Redis's cache
+        Session of user saving in cache's session db (Redis 0). "kwargs={'user': <Users's object >}
+
+        Caching of user's db in cache's db (Redis 1). Below, it's cache's db.
         Now will be saving on the 27 hours.
         'task_user_from_cache' task wil be to upgrade postgres at ~ am 01:00
         Timetable look the 'project.celery.app.base.Celery.conf'
@@ -96,6 +91,30 @@ class RedisOfPerson(Redis):
         :return None
         """
         try:
+            user = kwargs.__getitem__("user")
+            if user:
+                """
+                User's object save in cache's session (Redis 0)
+                """
+                b_user = user.encode()
+                await self.set(key, json.dumps({"b_user": b_user}))
+                return True
+        except Exception as error:
+            log.info(
+                ValueError(
+                    "%s: ERROR => %s"
+                    % (
+                        RedisOfPerson.__class__.__name__
+                        + self.async_set_cache_user.__name__,
+                        error.args[0],
+                    )
+                )
+            )
+            return False
+        try:
+            """
+            Cache's db
+            """
             await self.set(key, json.dumps(kwargs), 97200)
             return True
         except Exception as error:

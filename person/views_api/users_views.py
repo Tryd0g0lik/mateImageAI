@@ -1,3 +1,4 @@
+import base64
 import json
 import time
 import asyncio
@@ -6,16 +7,19 @@ from datetime import datetime, timedelta
 from collections.abc import Callable
 from typing import Any, TypedDict, NotRequired, List, Dict
 
+from asgiref.sync import sync_to_async
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import AnonymousUser
 from django.db import connections
 from django.shortcuts import redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login as login_user
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.template.base import kwarg_re
 from drf_yasg import openapi
 
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
 from person.access_tokens import AccessToken
+from person.cookies import Cookies
 from person.hasher import Hasher
 from person.interfaces import U, UserData, TypeUser
 from person.models import Users
@@ -23,7 +27,7 @@ from person.apps import signal_user_registered
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from adrf.viewsets import ViewSet
-
+from django.core.cache import caches
 from person.redis_person import RedisOfPerson
 from person.serializers import (
     UsersSerializer,
@@ -55,6 +59,16 @@ configure_logging(logging.INFO)
 
 async def sync_for_async(fn: Callable[[Any], Any], *args, **kwargs):
     return await asyncio.create_task(asyncio.to_thread(fn, *args, **kwargs))
+
+
+@sync_to_async(thread_sensitive=True)
+def aauthenticate(request, username, password):
+    return authenticate(request, username=username, password=password)
+
+
+@sync_to_async(thread_sensitive=True)
+def alogin(request, username):
+    return login_user(request, user=username)
 
 
 def new_connection(data) -> list:
@@ -460,7 +474,7 @@ class UserViews(ViewSet):
                 ]}
                 ````
         """
-        user: U = request.user
+        user: U | AnonymousUser = request.user
         data: UserData = request.data
         valid_password: None | object = None
         try:
@@ -477,7 +491,7 @@ class UserViews(ViewSet):
             valid_password = data.get("password").split().__getitem__(0)
 
             # Get hash password of user
-            hash_password = self.get_hash_password(valid_password)
+            hash_password = self.get_hash_password(str(valid_password))
             # Check exists of user to the both db
             client = RedisOfPerson()
             users_list: List[dict] = []
@@ -528,18 +542,49 @@ class UserViews(ViewSet):
                 return response
 
             # GET AUTHENTICATION (USER SESSION) IN DJANGO
-            # user activation
-            user = await sync_for_async(
-                authenticate, request, username=valid_username, password=valid_password
-            )
-
+            kwargs = {"username": valid_username, "password": hash_password}
+            user = await asyncio.to_thread(get_object_or_404, Users, **kwargs)
+            request.__setattr__("user", user)
             if user is not None:
-                await sync_for_async(login, request, user)
+                """
+                Cashing of user's session
+                """
+                client = RedisOfPerson(db=0)
+                if not client.ping():
+                    return Response(
+                        {"data": "Not connected with cache_db"},
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
+                k = f"user:{user.__getattribute__("id")}:session"
+                kwargs = {"user": user}
+                await client.async_set_cache_user(k, **kwargs)
+                await client.close()
+                request.user = user
+                await asyncio.to_thread(login_user, request, user=user)
+                # Caching a new session of user.
+                client = RedisOfPerson(db=0)
+                try:
+                    kwargs = {"user": user}
+                    await client.async_set_cache_user(
+                        f"user:{user.__getattribute__('id')}:session", **kwargs
+                    )
+
+                    b = Binary()
+                    session_key_user_str: str = b.str_to_binary(
+                        f"user:{user.__getattribute__('id')}:session"
+                    ).decode()
+                    coockie = Cookies(session_key_user_str, response)
+                    response: HttpResponse = coockie.session_user()
+                except Exception as error:
+                    log.error(
+                        "%s: CACHE OF USER is invalid. ERROR => %s"
+                        % (UserViews.__class__.__name__ + self.login.__name__, error)
+                    )
+                finally:
+                    await client.close()
             else:
-                return Response(
-                    {"data": "User not founded"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+                response.data = ({"data": "User not founded"},)
+                return response
             try:
 
                 # GET ACCESS TOKENS
@@ -557,13 +602,16 @@ class UserViews(ViewSet):
             try:
                 """ACCESS TOKEN BASE64"""
                 access_binary = Binary()
-                access_base64_str = access_binary.object_to_binary(tokens.access_token)
-                access_result = access_binary.str_to_binary(access_base64_str)
+                access_base64_binary = access_binary.object_to_binary(
+                    tokens.access_token
+                )
+                # access_result = access_binary.binary_to_str(access_base64_binary)
+                access_result = base64.b64encode(access_base64_binary).decode()
                 """ REFRESH TOKEN BASE64"""
                 reffresh_binary = Binary()
-                reffresh_base64_str = reffresh_binary.object_to_binary(tokens)
-                reffresh_result = reffresh_binary.str_to_binary(reffresh_base64_str)
-                return JsonResponse(
+                reffresh_base64_binary = reffresh_binary.object_to_binary(tokens)
+                reffresh_result = base64.b64encode(reffresh_base64_binary).decode()
+                data = (
                     {
                         "data": [
                             {
@@ -576,8 +624,9 @@ class UserViews(ViewSet):
                             },
                         ]
                     },
-                    status=status.HTTP_200_OK,
                 )
+                JsonResponse.cookies = response.cookies
+                return JsonResponse(data=data, safe=False, status=status.HTTP_200_OK)
             except Exception as ex:
                 return Response(
                     {"data": ex.args.__getitem__(0)},

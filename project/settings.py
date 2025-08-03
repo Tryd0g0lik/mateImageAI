@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'project.middleware.RedisAuthMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -140,17 +141,33 @@ DATABASES = {
 # 4. Configure Celery to use ....
 #
 # CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
-#             "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
-#         },
-#         "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
-#
-#     },
+    # "default": {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": "redis://127.0.0.1:6379/1",  # БД 1 для кэша
+    #     "OPTIONS": {
+    #         "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #         "SOCKET_TIMEOUT": 5,
+    #     },
+    #     "KEY_PREFIX": "auth_cache",
+    # },
+    # "sessions": {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": "redis://127.0.0.1:6379/0",  # БД 0 для сессий
+    #     "OPTIONS": {
+    #         "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #     },
+    # },
+    # "default": {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": f"{REDIS_LOCATION_URL}",   # Ваш адрес Redis + номер БД
+    #     "OPTIONS": {
+    #         "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #         "SOCKET_CONNECT_TIMEOUT": 5,  # Таймаут подключения (сек)
+    #         "SOCKET_TIMEOUT": 5, # Таймаут операций (сек)
+    #     },
+    #     "KEY_PREFIX": "metaimage_",   # Префикс для всех ключей
+    #
+   # },
 # }
 # CELERY_BROKER_URL=os.environ.get("redis://83.166.245.209:6380")
 # CELERY_RESULT_BACKEND=os.environ.get("redis://83.166.245.209:6380/0")

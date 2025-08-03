@@ -389,7 +389,7 @@ path: "`swagger<format>/`"
 - '`GET`' "`{{url_basis}}/api/auth/register/`" - Для user admin. Должны получить список пользователей.
 - '`GET`' "`{{url_basis}}/api/auth/register/<int:pk>`" - Возвращает данные одного пользователя.
 - "`PATCH`" "`{{url_basis}}/api/auth/register/<int:pk>/logout/`" Выход из профиля.
-- "`POST`" "`{{url_basis}}/api/auth/register/0/login/`" Для астивизации профиля.
+- "`POST`" "`{{url_basis}}/api/auth/register/0/login/`" Для активизации профиля.
 - "`GET`" "`{{url_basis}}/api/auth/csrftoken/`" Когда необходимо получить csrf token.
 - "`GET`" "`{{url_basis}}/activate/< referral key from the referral link>/`" Пример: "`/activate/Sergey_null_MzSS4C6FWiCakl9ZtQ_x3QbJHbLokXOdKU03sYQkxsk/`".\
 Referral link содержит криптографическую подпись из  "`username`". Шаблон referral link - "`< first_name >_null_< username >`". \
