@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from typing import Dict, Union, Any
@@ -6,12 +7,13 @@ from redis.exceptions import ConnectionError
 
 from dotenv_ import DB_TO_RADIS_HOST
 from logs import configure_logging
+from person.binaries import Binary
 
 log = logging.getLogger(__name__)
 configure_logging(logging.INFO)
 
 
-class RedisOfPerson(Redis):
+class RedisOfPerson(Redis, Binary):
     def __init__(
         self,
         host: str = f"{DB_TO_RADIS_HOST}",
@@ -96,8 +98,9 @@ class RedisOfPerson(Redis):
                 """
                 User's object save in cache's session (Redis 0)
                 """
-                b_user = user.encode()
-                await self.set(key, json.dumps({"b_user": b_user}))
+                b_user = base64.b64encode(self.object_to_binary(user))
+
+                await self.set(key, json.dumps({"b_user": b_user.decode()}))
                 return True
         except Exception as error:
             log.info(

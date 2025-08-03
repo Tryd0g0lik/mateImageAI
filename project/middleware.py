@@ -1,11 +1,7 @@
 # middleware.py
-import json
+import base64
 import logging
 import asyncio
-from django.contrib.auth.models import AbstractUser
-from django.contrib.sessions.backends.cached_db import SessionStore
-from django.core.cache import caches
-from django.db.models.expressions import result
 from django.http import HttpRequest
 
 from person.binaries import Binary
@@ -39,7 +35,6 @@ class RedisAuthMiddleware:
                 b = Binary()
 
                 b_session_key = b.binary_to_str(str_session_key.encode())
-                # session_key = b_session_key.decode("utf-8")
                 # get cache of user's session key from the redis 0
                 loop = asyncio.get_event_loop()
                 async_has_key = loop.run_until_complete(
@@ -54,13 +49,12 @@ class RedisAuthMiddleware:
                     self.client.async_get_cache_user(b_session_key)
                 )
                 loop.close()
-                session_user_json = json.loads(session_user)
                 b = Binary()
-                user_obj = b.binary_to_object(session_user_json.__getattr__("b_user"))
+                user_obj = b.binary_to_object(
+                    base64.b64decode(session_user.__getitem__("b_user"))
+                )
                 request.__setattr__("user", user_obj)
-                request.user.is_authenticated = True
                 request.user.is_active = True
-                # return self.get_response(request)
         except Exception as error:
             log.error(
                 "%s: %s"
