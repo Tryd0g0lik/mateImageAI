@@ -15,6 +15,7 @@ from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login as login_user
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.template.base import kwarg_re
+from django.views.decorators.csrf import csrf_protect
 from drf_yasg import openapi
 
 from dotenv_ import SECRET_KEY_DJ, POSTGRES_DB
@@ -486,7 +487,7 @@ class UserViews(ViewSet):
                 {"data": " Data type is not validate: %s" % error.args},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not user.is_active and valid_username and valid_password:
+        if not user.is_authenticated and valid_username and valid_password:
             valid_username = data.get("username").split().__getitem__(0)
             valid_password = data.get("password").split().__getitem__(0)
 
@@ -514,7 +515,7 @@ class UserViews(ViewSet):
                 users_list: List[U] = [
                     view async for view in Users.objects.filter(username=valid_username)
                 ]
-                # RUN THE TASK - Update CACHE's USER
+                # RUN THE TASK - Update CACHE's USER. CHECK the  async_task_user_login by steps!!
                 task_user_login.apply_async(
                     kwargs={"user_id": users_list.__getitem__(0).__getattribute__("id")}
                 )
@@ -537,7 +538,7 @@ class UserViews(ViewSet):
                     kwargs={"user_id": user_one.__getattribute__("id")}
                 )
             # check a password
-            if not (user_one.__getitem__("password") == hash_password):
+            if not (user_one.__getattribute__("password") == hash_password):
                 log.error("Invalid password")
                 return response
 
