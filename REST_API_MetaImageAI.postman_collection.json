@@ -1,0 +1,574 @@
+{
+	"info": {
+		"_postman_id": "ad666a9e-df7b-4084-b1a6-f201545ebbc8",
+		"name": "REST API MetaImageAI",
+		"description": "# 🚀 Get started here\n\nThis template guides you through CRUD operations (GET, POST, PUT, DELETE), variables, and tests.\n\n## 🔖 **How to use this template**\n\n#### **Step 1: Send requests**\n\nRESTful APIs allow you to perform CRUD operations using the POST, GET, PUT, and DELETE HTTP methods.\n\nThis collection contains each of these [request](https://learning.postman.com/docs/sending-requests/requests/) types. Open each request and click \"Send\" to see what happens.\n\n#### **Step 2: View responses**\n\nObserve the response tab for status code (200 OK), response time, and size.\n\n#### **Step 3: Send new Body data**\n\nUpdate or add new data in \"Body\" in the POST request. Typically, Body data is also used in PUT request.\n\n```\n{\n    \"name\": \"Add your name in the body\"\n}\n\n ```\n\n#### **Step 4: Update the variable**\n\nVariables enable you to store and reuse values in Postman. We have created a [variable](https://learning.postman.com/docs/sending-requests/variables/) called `base_url` with the sample request [https://postman-api-learner.glitch.me](https://postman-api-learner.glitch.me). Replace it with your API endpoint to customize this collection.\n\n#### **Step 5: Add tests in the \"Scripts\" tab**\n\nAdding tests to your requests can help you confirm that your API is working as expected. You can write test scripts in JavaScript and view the output in the \"Test Results\" tab.\n\n<img src=\"https://content.pstmn.io/fa30ea0a-373d-4545-a668-e7b283cca343/aW1hZ2UucG5n\" width=\"2162\" height=\"1530\">\n\n## 💪 Pro tips\n\n- Use folders to group related requests and organize the collection.\n    \n- Add more [scripts](https://learning.postman.com/docs/writing-scripts/intro-to-scripts/) to verify if the API works as expected and execute workflows.\n    \n\n## 💡Related templates\n\n[API testing basics](https://go.postman.co/redirect/workspace?type=personal&collectionTemplateId=e9a37a28-055b-49cd-8c7e-97494a21eb54&sourceTemplateId=ddb19591-3097-41cf-82af-c84273e56719)  \n[API documentation](https://go.postman.co/redirect/workspace?type=personal&collectionTemplateId=e9c28f47-1253-44af-a2f3-20dce4da1f18&sourceTemplateId=ddb19591-3097-41cf-82af-c84273e56719)  \n[Authorization methods](https://go.postman.co/redirect/workspace?type=personal&collectionTemplateId=31a9a6ed-4cdf-4ced-984c-d12c9aec1c27&sourceTemplateId=ddb19591-3097-41cf-82af-c84273e56719)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25957669"
+	},
+	"item": [
+		{
+			"name": "user_register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Body is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('data');",
+							"    pm.expect(jsonData['data']).to.equal(\"OK\")",
+							"});",
+							"pm.test(\"Response time is less than 200ms\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+							"});",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    // const response = await pm.sendRequest({\r",
+							"    //     url: `http://127.0.0.1:8000/api/auth/csrftoken/`,\r",
+							"    //     method: \"GET\"\r",
+							"    // });\r",
+							"\r",
+							"    // console.log(response.json());\r",
+							"    pm.sendRequest(\r",
+							"    response, (err, response) => {\r",
+							"        if (err){\r",
+							"            console.log(\"Ошибка при получении токена:\", err)\r",
+							"        }\r",
+							"        const result = response.json()\r",
+							"        console.log(\"Получили токен\")\r",
+							"        pm.collectionVariables.set(\"csrfToken\", result[\"csrfToken\"])\r",
+							"        }\r",
+							"    );\r",
+							"\r",
+							"} catch (err) {\r",
+							"    console.error(err);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "Sergey",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "work80@mail.ru",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url_basis}}/api/auth/register/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"register",
+						""
+					]
+				},
+				"description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+			},
+			"response": []
+		},
+		{
+			"name": "login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Fixed JSON object reference and check for token_access",
+							"pm.test('response should be return the \"token_access\". It need save', ()=>{",
+							"    console.log(\"START \")",
+							"    console.log(\"response\",pm.response.json() )",
+							"    pm.expect(pm.response.json().data).to.have.length(2);",
+							"    pm.expect(pm.response.json().data[0]).to.have.property('token_access');",
+							"    console.log(\"RESPONSE: \", pm.response.json())",
+							"    const data = pm.response.json().data;",
+							"    if (data[0].hasOwnProperty(\"token_access\")){",
+							"        access_token = pm.response.json().data[0].token_access;",
+							"        pm.collectionVariables.set(\"access_token\", access_token);",
+							"        console.log(\"the END\");",
+							"    }",
+							"})",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"try{\r",
+							"    csrftoken_cookie = pm.cookies.get(\"csrftoken\")\r",
+							"    pm.collectionVariables.set(\"csrfToken\", csrftoken_cookie)\r",
+							"    console.log(\"csrftoken_cookie - fow savied\")\r",
+							"}catch(error){\r",
+							"    console.log(\"ERROR => \", error);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-CSRFToken",
+						"value": "{{csrfToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "Sergey",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "work80@mail.ru",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url_basis}}/api/auth/register/0/login/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"register",
+						"0",
+						"login",
+						""
+					]
+				},
+				"description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+			},
+			"response": []
+		},
+		{
+			"name": "Update data",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful PUT request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/info?id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"info"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "1"
+						}
+					]
+				},
+				"description": "This is a PUT request and it is used to overwrite an existing piece of data. For instance, after you create an entity with a POST request, you may want to modify that later. You can do that using a PUT request. You typically identify the entity being updated by including an identifier in the URL (eg. `id=1`).\n\nA successful PUT request typically returns a `200 OK`, `201 Created`, or `204 No Content` response code."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete data",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful DELETE request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 202, 204]);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/info?id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"info"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "1"
+						}
+					]
+				},
+				"description": "This is a DELETE request, and it is used to delete data that was previously created via a POST request. You typically identify the entity being updated by including an identifier in the URL (eg. `id=1`).\n\nA successful DELETE request typically returns a `200 OK`, `202 Accepted`, or `204 No Content` response code."
+			},
+			"response": []
+		},
+		{
+			"name": "csrf_token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url_basis}}/api/auth/csrftoken/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"csrftoken",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "logout",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response status code is 204\", function () {\r",
+							"    pm.expect(pm.response.code).to.eql(204);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response time is less than 200ms\", function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response body is empty for a successful logout\", function () {\r",
+							"    const responseData = pm.response.json();\r",
+							"    \r",
+							"    pm.expect(responseData).to.be.an('object').that.is.empty;\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response schema is as expected\", function () {\r",
+							"    const responseData = pm.response.json();\r",
+							"    \r",
+							"    pm.expect(responseData).to.be.an('object');\r",
+							"    pm.expect(responseData).to.not.have.any.keys('email', 'name', 'address', 'city', 'state', 'phone', 'age');\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Subsequent requests return an unauthorized status code\", function () {\r",
+							"    pm.expect(pm.response.code).to.eql(401);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "X-CSRFToken",
+						"value": "{{csrfToken}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-csrftoken",
+						"value": "{{csrfToken}}",
+						"type": "text"
+					},
+					{
+						"key": "AccessToken",
+						"value": "{{access_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url_basis}}/api/auth/register/46/logout/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"register",
+						"46",
+						"logout",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Authenticate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url_basis}}/activate/Sergey_null_MzSS4C6FWiCakl9ZtQ_x3QbJHbLokXOdKU03sYQkxsk/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"activate",
+						"Sergey_null_MzSS4C6FWiCakl9ZtQ_x3QbJHbLokXOdKU03sYQkxsk",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_all_users",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "Sergey",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "work80@mail.ru",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url_basis}}/api/auth/register/",
+					"host": [
+						"{{url_basis}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"register",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "jwt",
+		"jwt": [
+			{
+				"key": "header",
+				"value": "{\"Authorization\":\"gASVKAEAAAAAAACMH3Jlc3RfZnJhbWV3b3JrX3NpbXBsZWp3dC50b2tlbnOUjAtBY2Nlc3NUb2tlbpSTlCmBlH2UKIwFdG9rZW6UTowMY3VycmVudF90aW1llIwIZGF0ZXRpbWWUjAhkYXRldGltZZSTlEMKB+kHExEHOwz9r5RoB4wIdGltZXpvbmWUk5RoB4wJdGltZWRlbHRhlJOUSwBLAEsAh5RSlIWUUpSGlFKUjAdwYXlsb2FklH2UKIwKdG9rZW5fdHlwZZSMBmFjY2Vzc5SMA2V4cJRKG9J7aIwDaWF0lErv0HtojANqdGmUjCAzZDExYzI2NjJkMDM0YjdlODgxY2I1YzQ5ZDYyMGIzZpSMB3VzZXJfaWSUSy6MBG5hbWWUjAZTZXJnZXmUdXViLg==\"\"}",
+				"type": "string"
+			},
+			{
+				"key": "algorithm",
+				"value": "HS256",
+				"type": "string"
+			},
+			{
+				"key": "isSecretBase64Encoded",
+				"value": false,
+				"type": "boolean"
+			},
+			{
+				"key": "payload",
+				"value": "{}",
+				"type": "string"
+			},
+			{
+				"key": "addTokenTo",
+				"value": "header",
+				"type": "string"
+			},
+			{
+				"key": "headerPrefix",
+				"value": "Bearer",
+				"type": "string"
+			},
+			{
+				"key": "queryParamKey",
+				"value": "token",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "id",
+			"value": "1"
+		},
+		{
+			"key": "base_url",
+			"value": "https://postman-rest-api-learner.glitch.me/"
+		},
+		{
+			"key": "access_token",
+			"value": "gASVKAEAAAAAAACMH3Jlc3RfZnJhbWV3b3JrX3NpbXBsZWp3dC50b2tlbnOUjAtBY2Nlc3NUb2tlbpSTlCmBlH2UKIwFdG9rZW6UTowMY3VycmVudF90aW1llIwIZGF0ZXRpbWWUjAhkYXRldGltZZSTlEMKB",
+			"type": "string"
+		},
+		{
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "csrfToken",
+			"value": "Dl0U5KguqwfBLUOZIcD06MFpCH3QjSgJHfypWYZeiPJz9F6GtfgWUTYeVcZPxXpu",
+			"type": "string"
+		}
+	]
+}
